@@ -1,8 +1,11 @@
 """Fixtures dos testes: banco de teste e cliente HTTP."""
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -10,6 +13,18 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import get_settings
 from app.deps import get_db
 from app.main import app
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def migrated_database() -> Iterator[None]:
+    """Sobe o esquema do banco de teste antes de qualquer teste."""
+    settings = get_settings()
+    config = Config(str(BACKEND_DIR / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", settings.test_database_url.replace("%", "%%"))
+    command.upgrade(config, "head")
+    yield
 
 
 @pytest.fixture
