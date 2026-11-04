@@ -1,14 +1,15 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import { CollectionPage } from "@/features/collection/collection-page";
 import { Layout } from "./layout";
 import { Providers } from "./providers";
 
 const ROUTE_HOME = "/";
+const ROUTE_COLLECTION = "/coleta";
 
 // Rotas do esqueleto. As telas definitivas chegam nas tarefas seguintes.
 const APP_ROUTES = [
   ROUTE_HOME,
-  "/coleta",
   "/comecar",
   "/demo",
   "/comparar",
@@ -30,6 +31,7 @@ export function AppRoutes() {
     <Routes>
       <Route path={ROUTE_HOME} element={<Layout />}>
         <Route index element={<Placeholder name={ROUTE_HOME} />} />
+        <Route path={ROUTE_COLLECTION.slice(1)} element={<CollectionPage />} />
         {APP_ROUTES.filter((route) => route !== ROUTE_HOME).map((route) => (
           <Route
             key={route}
