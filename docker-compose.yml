@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: imobscore
+      POSTGRES_PASSWORD: imobscore
+      POSTGRES_DB: imobscore
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imobscore"]
+      interval: 3s
+      retries: 20
+    ports: ["5432:5432"]          # usado por make dev e pelos testes
+volumes:
+  pgdata:

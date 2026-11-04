@@ -7,6 +7,7 @@ Ambos os agentes acrescentam linhas; ninguém apaga (seção 1.3 de `docs/PLAN.m
 ## Concluídas (ID · data · resumo da verificação)
 
 - E01 · 2026-11-03 · `make help` lista os 13 alvos; `docs/PLAN.md` idêntico ao arquivo fornecido (sha256); pastas da seção 3 criadas. PR aguardando a aprovação de João, ver Q1.
+- E02 · 2026-11-04 · `docker compose up -d db` → `imobscore-engine-db-1` `Up (healthy)`, `0.0.0.0:5432->5432/tcp`; `docker compose exec db psql -U imobscore -d imobscore_test -c "select 1"` → 1 linha, exit 0. `docker/initdb/01-test-db.sql` criou `imobscore_test` (owner `imobscore`) na inicialização. Container e volume `imobscore-engine_pgdata` deixados no ar.
 
 ## Correções pendentes (FIX-n)
 
