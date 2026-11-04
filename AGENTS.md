@@ -9,4 +9,5 @@ Antes de qualquer tarefa, leia o arquivo da tarefa pedida (docs/tasks/<ID>-*.md)
 - Se algo não estiver especificado, não decida: escreva a pergunta em docs/STATUS.md, em "Perguntas abertas", e pare.
 - Não adicione dependências nem mude versões. Não apague, pule nem afrouxe testes.
 - Termine só com todos os comandos de "Verificação" passando. Registre em docs/STATUS.md e faça um commit "tipo(escopo): ID título".
+- Commits e PRs não citam agentes nem ferramentas de IA: sem "Co-Authored-By", sem "Generated with" e sem menção equivalente.
 - Se uma verificação falhar duas vezes seguidas, pare e marque a tarefa como "precisa de revisão do arquiteto".

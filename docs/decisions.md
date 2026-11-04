@@ -18,3 +18,4 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-03 · E01 · `AGENTS.md` deixa de ser o texto exato da E01: o arquivo da tarefa é lido primeiro e é o que vale · decisão de João (Q6), para não carregar o plano inteiro a cada tarefa.
 - 2026-11-03 · E01 · As tarefas E reproduzem os trechos do plano de que precisam; as tarefas A não, porque o `CLAUDE.md` manda ler o plano inteiro · o pedido de João (Q6) trata do executor.
 - 2026-11-03 · E01 · Além da palavra da Q5, `docs/PLAN.md` mudou na seção 1.5 e nos blocos de `AGENTS.md` e `CLAUDE.md` da E01; o `CLAUDE.md` ganhou a regra de levar às tarefas E as mudanças de especificação · decisão de João (Q7).
+- 2026-11-03 · E01 · `AGENTS.md` e `CLAUDE.md` proíbem citar agentes em commits e PRs, e os commits do PR #1 foram reescritos sem essas menções · pedido de João.
