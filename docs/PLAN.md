@@ -12,7 +12,7 @@ Este documento é autocontido. Nenhum agente deve precisar de informação que n
 
 Um app web que recomenda imóveis a partir de escolhas entre pares ("qual você prefere?"). Ele roda inteiro no notebook com Docker Compose, sem internet. São cinco fluxos:
 
-1. **Coleta (`/coleta`):** um colega informa um código (P01 a P10), aceita o consentimento, responde às perguntas básicas, escolhe uma persona e responde a 40 pares aleatórios. Os dados servem ao experimento.
+1. **Coleta (`/coleta`):** um colega lê uma tela inicial sobre o experimento, aceita o consentimento, informa a faixa de preço, escolhe uma persona e responde a 25 pares aleatórios de imóveis à venda em Goiânia. O servidor gera o código do participante, e nenhum dado pessoal é coletado. Os dados servem ao experimento.
 2. **Onboarding (`/comecar`) e modo demo (`/demo`):** cidade, compra ou aluguel, faixa de preço e persona (Família, Investidor ou Estudante). No modo demo, um toque na persona preenche o resto.
 3. **Comparações (`/comparar`):** 3 pares na demo, escolhidos pelo motor.
 4. **Feed (`/feed`):** o catálogo ordenado por uma nota de afinidade de 0 a 100, com intervalo de incerteza e a alternância Antes e Depois.
@@ -138,7 +138,7 @@ Rota: /...   Versão: 1   Status: ver APPROVAL.md
 
 | ID | Tela | Rota | Gate | Prazo de aprovação |
 | --- | --- | --- | --- | --- |
-| M1 | Coleta: código, consentimento, perguntas, persona e agradecimento | `/coleta` | G1 | qua 04/11, 16h |
+| M1 | Coleta: tela inicial, consentimento, faixa de preço, persona e agradecimento | `/coleta` | G1 | qua 04/11, 16h |
 | M4 | Comparação de um par (usada na coleta e na demo) | `/comparar` | G1 | qua 04/11, 16h |
 | M2 | Início | `/` | G2 | qui 05/11, 18h |
 | M3 | Onboarding em dois passos | `/comecar` | G2 | qui 05/11, 18h |
@@ -519,8 +519,8 @@ CREATE TABLE sessions (
   price_min        numeric(12,2) NOT NULL,
   price_max        numeric(12,2) NOT NULL,
   persona_slug     text NOT NULL REFERENCES personas(slug),
-  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 40
-  participant_code text,                             -- só na coleta: P01..P10
+  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 25
+  participant_code text,                             -- só na coleta: gerado pelo servidor (P01, P02...)
   consent_at       timestamptz,                      -- obrigatório quando mode = 'collection'
   status           text NOT NULL DEFAULT 'comparing' CHECK (status IN ('comparing','done')),
   created_at       timestamptz NOT NULL DEFAULT now(),
@@ -576,7 +576,7 @@ CREATE TABLE experiment_results (
   run_id           uuid NOT NULL,
   participant_code text NOT NULL,
   method           text NOT NULL CHECK (method IN ('equal','persona','mle','bayes')),
-  n_train          smallint NOT NULL,                -- 3, 5, 10, 15, 25
+  n_train          smallint NOT NULL,                -- 3, 5, 10, 15
   split_seed       integer NOT NULL,
   n_test           smallint NOT NULL,
   accuracy         double precision NOT NULL,
@@ -761,8 +761,8 @@ No feed, a comparação lado a lado usa `persona` à esquerda e `bayes` à direi
 
 ### 5.9 Protocolo de avaliação (comando `evaluate`)
 
-1. Entram as sessões `collection` com pelo menos 35 pares respondidos. Os pares também são exportados para `data/collected/pairs.json` pelo comando `export`, e o `evaluate` aceita esse arquivo como entrada (`--from-json`). Assim a avaliação roda sem banco.
-2. Para cada participante, cada n\_train em {3, 5, 10, 15, 25} e cada `split_seed` de 0 a 19: sorteie 10 pares de teste. Os pares de treino são os n\_train primeiros dos que sobraram, em ordem embaralhada.
+1. Entram as sessões `collection` com pelo menos 25 pares respondidos. Os pares também são exportados para `data/collected/pairs.json` pelo comando `export`, e o `evaluate` aceita esse arquivo como entrada (`--from-json`). Assim a avaliação roda sem banco.
+2. Para cada participante, cada n\_train em {3, 5, 10, 15} e cada `split_seed` de 0 a 19: sorteie 10 pares de teste. Os pares de treino são os n\_train primeiros dos que sobraram, em ordem embaralhada.
 3. Treine `mle` e `bayes` só com o treino. `equal` e `persona` não treinam, mas são avaliados nos mesmos pares de teste.
 4. Métricas no teste: **acurácia** (acerto quando p > 0,5; p = 0,5 vale meio acerto) e **perda logarítmica** (com p limitado a \[10⁻⁶, 1 − 10⁻⁶\]).
 5. Grave uma linha por (participante, método, n\_train, split) em `experiment_results`, todas com o mesmo `run_id`.
@@ -869,7 +869,7 @@ class ResultRow:
     n_test: int; accuracy: float; log_loss: float
 
 def evaluate_participant(code: str, D: np.ndarray, mu: np.ndarray, sd: np.ndarray, *,
-                         n_train_list: tuple[int, ...] = (3, 5, 10, 15, 25), n_splits: int = 20,
+                         n_train_list: tuple[int, ...] = (3, 5, 10, 15), n_splits: int = 20,
                          n_test: int = 10, cfg: MCMCConfig = MCMCConfig()) -> list[ResultRow]: ...
 # D (m, 12) = pares do participante, orientados vencedor - perdedor, na ordem respondida; protocolo 5.9
 def simulate_choices(D_left_minus_right: np.ndarray, w_true: np.ndarray,
@@ -911,9 +911,8 @@ class SessionCreate(BaseModel):
     price_min: Decimal = Field(gt=0)
     price_max: Decimal = Field(gt=0)
     persona_slug: Literal["familia", "investidor", "estudante"]
-    participant_code: str | None = Field(default=None, pattern=r"^P\d{2}$")
     consent: bool = False
-    # model_validator: price_min < price_max; collection exige participant_code e consent=True
+    # model_validator: price_min < price_max; collection exige consent=True, city="Goiânia" e purpose="sale"; o servidor gera participant_code
 
 class SessionOut(BaseModel):
     id: UUID; mode: str; city: str; purpose: str
@@ -978,7 +977,7 @@ class PosteriorOut(BaseModel):
 - **Cache:** o ranking é guardado em memória por `(session_id, n_comparisons, method)`, até 128 entradas.
 - **Erros:** formato único `{"detail": {"code": "...", "message": "..."}}`, com mensagem em pt-BR. Códigos: `session_not_found` (404), `listing_not_found` (404), `pair_already_answered` (409), `pair_out_of_order` (409), `session_done` (409), `validation_error` (422), `not_available` (501). Um handler global converte o `RequestValidationError` do FastAPI para esse formato.
 - **CORS:** liberado só para `http://localhost:5173` (desenvolvimento). Com o Docker Compose, o Nginx serve front-end e API na mesma origem.
-- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=40`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
+- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=25`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
 
 ## 7. Front-end
 
@@ -986,7 +985,7 @@ São 7 rotas no MVP, mais uma condicional. O fluxo principal é onboarding → c
 
 | Rota | Tela | Mockup | Conteúdo | Tarefa |
 | --- | --- | --- | --- | --- |
-| `/coleta` | Coleta | M1 + M4 | Código do participante (P01 a P10), consentimento, cidade, finalidade, faixa de preço, persona, 40 pares e agradecimento | E08 (primeira a ficar pronta) |
+| `/coleta` | Coleta | M1 + M4 | Tela inicial, consentimento, faixa de preço (Goiânia, compra), persona, 25 pares e agradecimento; o servidor gera o código do participante | E08 (primeira a ficar pronta) |
 | `/` | Início | M2 | Frase "Pare de filtrar. Comece a escolher.", botão Começar e botão Modo demo | E11 |
 | `/comecar` | Onboarding | M3 | Passo 1: cidade, finalidade, faixa de preço. Passo 2: cartões das 3 personas | E11 |
 | `/demo` | Modo demo | M3b | 3 cartões de persona; um toque cria a sessão `demo` com `demo_defaults` e vai para `/comparar` | E11 |
@@ -1014,7 +1013,6 @@ export const step1Schema = (opts: MetaOptions) =>
   });
 export const step2Schema = z.object({ personaSlug: z.enum(["familia", "investidor", "estudante"]) });
 export const collectionSchema = z.object({
-  participantCode: z.string().regex(/^P\d{2}$/, "Use o código recebido, ex.: P03"),
   consent: z.literal(true, { error: "É preciso concordar para participar" }),
 });
 ```
@@ -1027,7 +1025,7 @@ export const collectionSchema = z.object({
 
 **Painel do modelo (`features/model-panel`).** Gráfico de intervalos (Recharts, `ComposedChart` com barras de erro): para cada característica, um ponto para a média da priori e outro para a da posteriori, com a faixa de 5% a 95%. Abaixo, o traço de 4 das 16 cadeias de um peso escolhido em um `Select`, e um quadro com aceitação, R-hat, ESS e tempo. É a tela que conversa com a banca.
 
-**Painel do experimento (`features/experiment`).** Linhas de acurácia contra n\_train (3, 5, 10, 15, 25), uma por método, com faixa de ±1 desvio, e uma tabela com acurácia e perda logarítmica. Se a rodada tiver participantes simulados, um aviso fixo diz "Dados simulados".
+**Painel do experimento (`features/experiment`).** Linhas de acurácia contra n\_train (3, 5, 10, 15), uma por método, com faixa de ±1 desvio, e uma tabela com acurácia e perda logarítmica. Se a rodada tiver participantes simulados, um aviso fixo diz "Dados simulados".
 
 ### Dados e estado
 
@@ -1079,7 +1077,7 @@ Claude constrói o motor e desenha as telas; o executor implementa o resto em pa
   - **Passos:**
     1. Primeiro, `theme.css`, para destravar E05: variáveis CSS no formato do shadcn (`--background`, `--foreground`, `--card`, `--card-foreground`, `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--muted-foreground`, `--accent`, `--border`, `--input`, `--ring`, `--destructive`, `--radius`) para o tema claro (`:root`) e o escuro (`.dark`), mais `--score-low`, `--score-mid`, `--score-high` e `--font-sans: "Geist Variable", sans-serif`. Contraste AA em todos os pares texto e fundo.
     2. `copy.ts`: `export const copy = { common: {...}, collection: {...}, compare: {...} } as const;` com todos os textos das telas M1 e M4, inclusive mensagens de erro e de validação. Textos com variáveis viram funções, por exemplo `progress: (i: number, n: number) => \`Par ${i} de ${n}\`\`.
-    3. Mockups no formato da seção 1.6. O cartão de imóvel mostra ilustração, título, bairro, preço, área, quartos, banheiros, vagas, idade e os selos "aceita pet" e "portaria 24 h". M1 inclui o formulário (código, consentimento, cidade, finalidade, faixa de preço, persona), o uso de M4 para os 40 pares e a tela de agradecimento.
+    3. Mockups no formato da seção 1.6. O cartão de imóvel mostra ilustração, título, bairro, preço, área, quartos, banheiros, vagas, idade, lazer, distância ao centro e os selos "aceita pet" e "portaria 24 h". M1 inclui a tela inicial (o que é o experimento, o que a pessoa fará, como as respostas serão usadas e que nenhum dado pessoal é coletado), o formulário (consentimento, faixa de preço, persona; Goiânia e compra são fixas, e o código vem do servidor), o uso de M4 para os 25 pares e a tela de agradecimento.
     4. Apresentar a João (1.6) e registrar a decisão em `APPROVAL.md`.
   - **Pronto quando:** M1 e M4 aparecem como "aprovado" em `APPROVAL.md`.
 - [ ] **A02 · Características, catálogo simulado e personas** · qua 04/11 · depende de: E03
@@ -1125,9 +1123,9 @@ Claude constrói o motor e desenha as telas; o executor implementa o resto em pa
 - [ ] **A07 · Avaliação, simulação e relatório** · sex 06/11 · depende de: A06, E09
   - **Arquivos:** `backend/app/engine/evaluation.py`; `backend/app/analysis/__init__.py`; `backend/app/analysis/report.py`; as funções `simulate` e `evaluate` em `backend/app/cli.py`; `backend/tests/engine/test_evaluation.py`.
   - **Especificação:** seção 5.9 e o formato JSON da tarefa E09.
-  - **`simulate --participants 10 --out data/collected/pairs_simulated.json`:** participantes S01 a S10, personas em rodízio (familia, investidor, estudante), segmento de `demo_defaults` da persona, w verdadeiro = μ + N(0; 0,7²), 40 pares de `random_pairs` sobre os candidatos e escolhas por `simulate_choices`. `session_id` fica `null`.
+  - **`simulate --participants 10 --out data/collected/pairs_simulated.json`:** participantes S01 a S10, personas em rodízio (familia, investidor, estudante), segmento de `demo_defaults` da persona, w verdadeiro = μ + N(0; 0,7²), 25 pares de `random_pairs` sobre os candidatos e escolhas por `simulate_choices`. `session_id` fica `null`.
   - **`evaluate --from-json <arquivo> --out data/results`:** monta D de cada participante (z = `standardize(t, center, scale)`; vencedor = esquerda se `chosen = "A"`), roda `evaluate_participant` e grava `results.csv` (colunas: `run_id, participant_code, method, n_train, split_seed, n_test, accuracy, log_loss`, com um `run_id` UUID por execução), `summary.csv` (colunas: `method, n_train, acc_mean, acc_sd, ll_mean, ll_sd, n_participants`) e as figuras `accuracy_vs_ntrain.png` e `accuracy_by_participant.png` (seção 5.9). Imprime a tabela resumo no terminal.
-  - **Pronto quando:** nos dados simulados, `bayes` e `mle` superam `equal` com n\_train = 25, e Claude mostra as figuras a João.
+  - **Pronto quando:** nos dados simulados, `bayes` e `mle` superam `equal` com n\_train = 15, e Claude mostra as figuras a João.
 - [ ] **A-REV1 · Revisão do back-end** · sex 06/11, fim do dia · depende de: E07 a E10
   - Ler o diff de E07 a E10 contra as seções 4, 6 e 8.3; rodar `make check`; confirmar que `services/` só importa `app.engine`; medir o tempo de resposta de `POST /comparisons` no modo demo (meta: menos de 300 ms).
   - Cada problema vira uma tarefa `FIX-n` em `docs/STATUS.md`, com arquivo, o que está errado e o que a especificação diz. O executor as resolve antes da próxima tarefa.
@@ -1136,7 +1134,7 @@ Claude constrói o motor e desenha as telas; o executor implementa o resto em pa
   - Olhar os 10 primeiros imóveis do feed de cada persona com 0 pares. Se algum resultado for absurdo (ex.: Família com quitinetes no topo), ajustar `personas.yaml` e explicar a João no CP5.
   - Problemas viram `FIX-n`, como na A-REV1.
 - [ ] **A08 · Experimento com dados reais** · dom 08/11, a partir das 12h · depende de: coleta encerrada, A07
-  - Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 35 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
+  - Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 25 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
   - Escrever `docs/results.md` (até 1 página): número de participantes, tabela de acurácia e perda logarítmica por método em n\_train = 3, 5 e 15, se H1 e H2 se confirmaram e as limitações (seção 11 do guia).
   - **Checkpoint:** CP6.
 - [ ] **A09 · Revisão final e roteiro da demo** · seg 09/11 · depende de: E15
@@ -1241,13 +1239,13 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
   - **Verificação:** um teste roda `upgrade head`, `downgrade base` e `upgrade head` no banco de teste sem erro; `\dt` mostra as 8 tabelas.
 - [ ] **E05 · Esqueleto do front-end** · qua 04/11 · depende de: E01, A01 (`theme.css`)
   - **Arquivos:** tudo em `frontend/`, exceto `src/styles/theme.css`, `src/lib/copy.ts` e `src/features/`: `package.json`, `pnpm-lock.yaml`, `vite.config.ts`, `vitest.config.ts`, `tsconfig*.json`, `eslint.config.js`, `.prettierrc`, `components.json`, `index.html`, `src/main.tsx`, `src/app/router.tsx`, `src/app/providers.tsx`, `src/app/layout.tsx`, `src/styles/index.css`, `src/lib/cn.ts`, `src/stores/session-store.ts`, `src/components/ui/*` (gerados pelo shadcn), `src/test/setup.ts`, `src/mocks/handlers.ts` (vazio), `src/app/router.test.tsx`, `public/illustrations/` (6 SVGs simples: `apartment-1..3.svg`, `house-1..3.svg`, desenhos geométricos de um prédio e de uma casa em 3 cores do tema).
-  - **Passos:** `pnpm create vite frontend --template react-ts`; copiar dependências e scripts do `package.json` de referência (seção 2), aplicando as regras e os cortes dela; `pnpm dlx shadcn@latest init` escolhendo Base UI; `shadcn add button card badge progress slider select radio-group tabs tooltip switch skeleton sonner checkbox input label form`; `index.css` com `@import "tailwindcss"; @import "tw-animate-css"; @import "./theme.css";` e `@fontsource-variable/geist` importado em `main.tsx`; alias `@/` para `src/`; proxy `/api` para `http://localhost:8000` no `vite.config.ts`.
+  - **Passos:** `pnpm create vite frontend --template react-ts`; copiar dependências e scripts do `package.json` de referência (seção 2), aplicando as regras e os cortes dela; `pnpm dlx shadcn@latest init` escolhendo Base UI; `shadcn add button card badge progress slider select radio-group tabs tooltip switch skeleton sonner checkbox input label form`; `index.css` só com `@import "tailwindcss"; @import "tw-animate-css"; @import "./theme.css";`, apagando as variáveis e o `@theme` que o `shadcn init` gravar nesse arquivo, porque substituiriam o tema, e `@fontsource-variable/geist` importado em `main.tsx`; alias `@/` para `src/`; proxy `/api` para `http://localhost:8000` no `vite.config.ts`.
   - **Router:** rotas `/`, `/coleta`, `/comecar`, `/demo`, `/comparar`, `/feed`, `/modelo`, `/experimento` apontando para um componente temporário `Placeholder` que mostra o nome da rota; rota `*` para a início.
   - **`QueryClient`:** `retry: 1`, `refetchOnWindowFocus: false`.
   - **`session-store.ts`:** Zustand com `persist` (chave `imobscore-session`, `localStorage` envolvido em `try/catch`): `{ sessionId: string | null, mode: "product" | "demo" | "collection" | null, setSession(id, mode), reset() }`.
   - **Verificação:** `pnpm build && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:run` (o teste do router confere que `/feed` renderiza o placeholder).
 - [ ] **E06 · Comando seed** · qua 04/11, noite · depende de: A02, E04
-  - **Arquivos:** `backend/app/cli.py` (app Typer, rodado com `python -m app.cli`; deixar as funções `simulate` e `evaluate` para a A07); `o arquivo termina com if __name__ == "__main__": app()`; `backend/app/services/__init__.py`; `backend/app/services/seed_service.py`; `backend/tests/services/test_seed.py`.
+  - **Arquivos:** `backend/app/cli.py` (app Typer, rodado com `python -m app.cli`; deixar as funções `simulate` e `evaluate` para a A07); `o arquivo termina com if __name__ == "__main__": app()`; `backend/app/services/__init__.py`; `backend/app/services/seed_service.py`; `backend/tests/services/test_seed.py`; `backend/tests/conftest.py` (acrescentar uma fixture de sessão, com `autouse=True`, que roda `alembic upgrade head` em `TEST_DATABASE_URL`).
   - **`seed [--force] [--if-empty] [--with-results]`:**
     1. Se existir alguma linha em `sessions` e não houver `--force`, parar com a mensagem "Existem sessões; use --force para apagar tudo".
     2. Com `--if-empty` e `listings` não vazia, não fazer nada além do passo 6.
@@ -1257,24 +1255,24 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
     6. Com `--with-results` e `data/results/results.csv` existente: carregar esse CSV como em `load-results` (E10).
   - **Verificação:** `pytest tests/services/test_seed.py` confere 300 imóveis, 3 personas e 72 linhas de `feature_stats`; rodar duas vezes gera os mesmos códigos e preços.
 - [ ] **E07 · API da coleta** · qui 05/11, manhã · depende de: A03, E06
-  - **Arquivos:** `backend/app/schemas/__init__.py`, `meta.py`, `session.py`, `listing.py`, `pair.py`; `backend/app/services/listing_service.py` (`candidate_listings`), `session_service.py`, `pair_service.py`; `backend/app/api/v1/meta.py`, `sessions.py`; `backend/tests/api/test_meta.py`, `test_sessions.py`, `test_pairs_collection.py`.
+  - **Arquivos:** `backend/app/schemas/__init__.py`, `meta.py`, `session.py`, `listing.py`, `pair.py`; `backend/app/services/listing_service.py` (`candidate_listings`), `session_service.py`, `pair_service.py`; `backend/app/api/v1/__init__.py` (registrar as rotas novas), `meta.py`, `sessions.py`; `backend/app/deps.py` (acrescentar `get_session_or_404`, que levanta `ApiError` 404 `session_not_found`); `backend/tests/api/test_meta.py`, `test_sessions.py`, `test_pairs_collection.py`.
   - **Rotas:** `GET /meta/options`, `GET /meta/personas`, `POST /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/next-pair`, `POST /sessions/{id}/comparisons/{position}`, com os schemas e as regras da seção 6.
   - **`MetaOptions`:** `{ segments: [{ city, purpose, price_floor, price_ceiling }] }`, com o menor e o maior preço de cada segmento.
-  - **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Na coleta, exige `participant_code` e `consent = true`, e grava `consent_at = now()`. O mesmo código pode abrir mais de uma sessão (o colega pode trocar de aparelho).
-  - **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 40 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
+  - **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Na coleta, exige `consent = true`, `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`) e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
+  - **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 25 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
   - **Modos `demo` e `product`:** `POST /sessions` já funciona, mas `GET /next-pair` devolve `501 not_available` até a E10.
-  - **Testes:** criação com e sem consentimento; 40 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 40º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
+  - **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 na coleta fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
   - **Verificação:** `cd backend && uv run pytest -q tests/api`.
 - [ ] **E08 · Telas da coleta** · qui 05/11 · depende de: E05, E07, M1 e M4 aprovados
-  - **Arquivos:** `frontend/src/api/schema.d.ts` (gerado com `pnpm gen:api`), `src/api/client.ts` (`createClient<paths>({ baseUrl: "/api/v1" })`), `src/api/queries.ts`; `src/lib/format.ts` (`formatBRL`, `formatArea`, `formatRent` com "/mês", via `Intl.NumberFormat("pt-BR")`); `src/features/collection/*` e `src/features/compare/*`, com os componentes e arquivos listados em `m1-coleta.md` e `m4-comparar.md`; `src/mocks/handlers.ts`; os testes desses componentes; `src/app/router.tsx` (só trocar o placeholder de `/coleta`).
-  - **Comportamento:** o de M1 e M4. Além disso: o tempo de resposta é medido com `performance.now()` desde que o par aparece; as teclas ← e → escolhem; os botões ficam desabilitados enquanto a resposta é enviada; ao receber `done: true`, mostra o agradecimento. O schema do formulário é o `collectionSchema` da seção 7 somado ao `step1Schema` e ao `step2Schema`.
-  - **Testes:** código inválido mostra a mensagem de `copy.ts`; sem consentimento não envia; clique e tecla ← escolhem A; botão desabilitado durante o envio; resposta 204 leva ao agradecimento.
+  - **Arquivos:** `frontend/src/api/schema.d.ts` (gerado com `pnpm gen:api`), `src/api/client.ts` (`createClient<paths>({ baseUrl: "/api/v1" })`), `src/api/queries.ts`; `src/lib/format.ts` (`formatBRL`, `formatArea`, `formatDistance` ("2,3 km"), `formatRent` com "/mês", via `Intl.NumberFormat("pt-BR")`); `src/features/collection/*` e `src/features/compare/*`, com os componentes e arquivos listados em `m1-coleta.md` e `m4-comparar.md`; `src/mocks/handlers.ts`; os testes desses componentes; `src/app/router.tsx` (só trocar o placeholder de `/coleta`).
+  - **Comportamento:** o de M1 e M4. Além disso: o tempo de resposta é medido com `performance.now()` desde que o par aparece; as teclas ← e → escolhem; os botões ficam desabilitados enquanto a resposta é enviada; ao receber `done: true`, mostra o agradecimento. O schema do formulário é o `collectionFormSchema` descrito em `m1-coleta.md`.
+  - **Testes:** a tela inicial leva ao formulário; sem consentimento não envia; o `POST /sessions` envia Goiânia e `sale`; clique e tecla ← escolhem A; botão desabilitado durante o envio; resposta 204 leva ao agradecimento.
   - **Verificação:** `pnpm test:run && pnpm lint && pnpm typecheck`; e, com `make dev`, João completa 5 pares em uma janela de 375 px.
 - [ ] **E09 · Docker completo, exportação e túnel** · qui 05/11, até 17h · depende de: E07, E08
   - **Arquivos:** `backend/Dockerfile`; `frontend/Dockerfile`; `frontend/nginx.conf`; `docker-compose.yml` (serviços `api` e `web` da seção 10); o comando `export` em `backend/app/cli.py`; `backend/app/services/export_service.py`; `backend/tests/services/test_export.py`; `README.md` (como rodar e o túnel).
   - **`backend/Dockerfile`:** `python:3.12-slim`; copiar o `uv` da imagem `ghcr.io/astral-sh/uv`; `WORKDIR /app`; `uv sync --frozen --no-dev`; `ENV PATH=/app/.venv/bin:$PATH`; `CMD sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"`.
   - **`frontend/Dockerfile`:** estágio de build com `node:24-alpine` e `corepack enable`, `pnpm install --frozen-lockfile`, `pnpm build`; estágio final `nginx:alpine` com o `dist/` em `/usr/share/nginx/html`.
-  - **`nginx.conf`:** `location /api/ { proxy_pass http://api:8000; }` e `location / { try_files $uri /index.html; }`.
+  - **`nginx.conf`:** `location /api/ { proxy_pass http://api:8000; }` e `location / { try_files $uri /index.html; }`. No bloco `server`, `access_log off;`, para o servidor não registrar o IP de quem responde à coleta, porque a tela inicial promete que nenhum dado pessoal é coletado.
   - **`export --out <arquivo>`:** grava JSON neste formato exato (lido pela A07):
 
   ```json
@@ -1298,11 +1296,11 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
     ]
   }
   ```
-  - **Regras do export:** só sessões `collection` com pelo menos 35 pares respondidos; se um código tiver mais de uma sessão, fica a de mais pares respondidos (empate: a mais recente); só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
-  - **Verificação:** `make up` a partir de um clone limpo, seguido de `make seed`, sobe tudo; `curl http://localhost:8080/api/v1/health` responde ok; `make tunnel` gera um endereço, e um celular fora da rede local completa os 40 pares por ele; `make export` gera um JSON válido com esse participante. **João envia o link aos colegas às 18h**, com o código de cada um (P01 a P10).
+  - **Regras do export:** só sessões `collection` com pelo menos 25 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
+  - **Verificação:** `make up` a partir de um clone limpo, seguido de `make seed`, sobe tudo; `curl http://localhost:8080/api/v1/health` responde ok; `make tunnel` gera um endereço, e um celular fora da rede local completa os 25 pares por ele; `make export` gera um JSON válido com esse participante. **João envia o link aos colegas às 18h**; o mesmo link serve para todos.
 
 * [ ] **E10 · API do feed, do modelo e do experimento** · sex 06/11 · depende de: A06 concluída em `docs/STATUS.md`
-  - **Arquivos:** `backend/app/services/posterior_service.py`, `feed_service.py`, `experiment_service.py`, `pair_service.py` (acrescentar o modo adaptativo); `backend/app/schemas/feed.py`, `posterior.py`, `experiment.py`; `backend/app/api/v1/feed.py`, `posterior.py`, `experiment.py`, `meta.py` (acrescentar `/meta/features` e `/meta/inspection-items`), `sessions.py` (acrescentar o recálculo depois da resposta); o comando `load-results` em `backend/app/cli.py`; testes em `backend/tests/api/` e `backend/tests/services/`.
+  - **Arquivos:** `backend/app/services/posterior_service.py`, `feed_service.py`, `experiment_service.py`, `pair_service.py` (acrescentar o modo adaptativo); `backend/app/schemas/feed.py`, `posterior.py`, `experiment.py`; `backend/app/api/v1/__init__.py` (registrar as rotas novas), `feed.py`, `posterior.py`, `experiment.py`, `meta.py` (acrescentar `/meta/features` e `/meta/inspection-items`), `sessions.py` (acrescentar o recálculo depois da resposta); o comando `load-results` em `backend/app/cli.py`; testes em `backend/tests/api/` e `backend/tests/services/`.
   - **`posterior_service.get_or_fit(session, n) -> MCMCResult`:** se existir linha em `posteriors` com `(session_id, n_comparisons = n)`, carrega as amostras (`np.load` do `bytea`, convertido para `float64`) e devolve. Senão: D = z(vencedor) − z(perdedor) dos n primeiros pares respondidos, em ordem de `position`, com z = `standardize(raw_matrix(...), center, scale)` do segmento da sessão; `mu` e `sd` vêm de `personas.prior_mean` e `prior_sd`, na ordem de `FEATURE_KEYS`; `fit_posterior(D, mu, sd, seed_for(session.id, n), MCMCConfig(...))` com os valores de `MCMC_*` das configurações; grava a linha (amostras em `float32` com `np.save`, `mean`, `sd`, `ci_low` e `ci_high` por chave, campos de diagnóstico e `seed`) e devolve.
   - **Depois de cada resposta** (`POST /comparisons`), nos modos `demo` e `product`: chamar `get_or_fit(session, answered)` e devolver os diagnósticos em `AnswerOut`. No modo `collection`, não roda MCMC e devolve `diagnostics = null`.
   - **`GET /next-pair` nos modos `demo` e `product`:** candidatos de `candidate_listings`; `Z` padronizado; `samples = get_or_fit(session, answered).samples`; `shown` = conjunto de `frozenset({i, j})` dos pares já mostrados, em índices dos candidatos; `next_pair_bald(Z, samples, shown, np.random.default_rng(seed_for(session.id, 10_000 + answered)))`; gravar com `selection = 'adaptive'`. Com o corte C3, usar `random_pairs` como na coleta.
@@ -1354,7 +1352,7 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
   - **Arquivos:** só os apontados por cada `FIX-n` aberto pela A09.
   - **Verificação:** `make check` passa; João repete o roteiro manual da seção 9 sem falhas.
 * [ ] **E17 · \[C1\] Detalhe do imóvel e vistoria** · seg 09/11, só com autorização de João às 12h e M8 aprovado · depende de: E16
-  - **Arquivos:** `backend/app/api/v1/listings.py`; `backend/app/services/inspection_service.py`; as rotas de vistoria em `sessions.py`; o cálculo de `inspection_delta` em `feed_service.py`; `src/features/listing/*`; testes.
+  - **Arquivos:** `backend/app/api/v1/__init__.py` (registrar a rota nova), `listings.py`; `backend/app/services/inspection_service.py`; as rotas de vistoria em `sessions.py`; o cálculo de `inspection_delta` em `feed_service.py`; `src/features/listing/*`; testes.
   - **Conteúdo:** seções 6 e 7 ("Detalhe e vistoria"). O feed passa a somar a vistoria com `to_score(mean, soma dos delta)`.
   - **Verificação:** `make check`; marcar "Rua barulhenta" baixa o score na hora, e o valor persiste ao recarregar.
 
@@ -1489,7 +1487,7 @@ O plano já assume uma resposta padrão para cada questão, então nada bloqueia
 | Quantas horas por dia João tem para checkpoints e aprovações? | 4 a 5 horas | Menos tempo: CP1 e CP2 viram um só, e CP5 vai para o domingo | qua 04/11, manhã |
 | Qual modelo do OpenCode Go faz o papel de executor? | Qualquer um que João escolher; o plano não depende do modelo | Trocar de modelo se uma tarefa falhar duas vezes | qua 04/11, manhã |
 | Como os colegas acessam a coleta? | Túnel do Cloudflare com o notebook ligado de 05/11, 18h, a 08/11, 12h | Coleta presencial no notebook; deploy mínimo só da coleta | qui 05/11, 12h |
-| Quantos colegas e quantos pares cada um? | Até 10 colegas, 40 pares aleatórios (cerca de 3 minutos) | 30 pares, o que limita a curva a n\_train = 15 | qui 05/11, 12h |
+| Quantos colegas e quantos pares cada um? | Até 10 colegas, 25 pares aleatórios (cerca de 2 minutos), o que limita a curva a n\_train = 15. Decidido por João em 04/11 | — | Decidido |
 | As 12 características da seção 5.1 estão certas? | Lista da seção 5.1 | Trocar `is_house` por andar; separar o condomínio do preço | qua 04/11, antes da A02 |
 | Os pesos das personas fazem sentido? | Tabela da seção 5.3 | Ajuste na A-REV2, olhando o feed de cada persona | sáb 07/11 |
 | Formato do relatório para a disciplina | `docs/results.md`, figuras e CSV gerados pela A07 e pela A08 | Confirmar com o professor | sex 06/11 |

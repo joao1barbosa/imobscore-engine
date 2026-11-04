@@ -77,7 +77,7 @@ Rota: /...   Versão: 1   Status: ver APPROVAL.md
 
 | ID | Tela | Rota | Gate | Prazo de aprovação |
 | --- | --- | --- | --- | --- |
-| M1 | Coleta: código, consentimento, perguntas, persona e agradecimento | `/coleta` | G1 | qua 04/11, 16h |
+| M1 | Coleta: tela inicial, consentimento, faixa de preço, persona e agradecimento | `/coleta` | G1 | qua 04/11, 16h |
 | M4 | Comparação de um par (usada na coleta e na demo) | `/comparar` | G1 | qua 04/11, 16h |
 | M2 | Início | `/` | G2 | qui 05/11, 18h |
 | M3 | Onboarding em dois passos | `/comecar` | G2 | qui 05/11, 18h |
@@ -116,7 +116,7 @@ Rota: /...   Versão: 1   Status: ver APPROVAL.md
 
 | Rota | Tela | Mockup | Conteúdo | Tarefa |
 | --- | --- | --- | --- | --- |
-| `/coleta` | Coleta | M1 + M4 | Código do participante (P01 a P10), consentimento, cidade, finalidade, faixa de preço, persona, 40 pares e agradecimento | E08 (primeira a ficar pronta) |
+| `/coleta` | Coleta | M1 + M4 | Tela inicial, consentimento, faixa de preço (Goiânia, compra), persona, 25 pares e agradecimento; o servidor gera o código do participante | E08 (primeira a ficar pronta) |
 | `/` | Início | M2 | Frase "Pare de filtrar. Comece a escolher.", botão Começar e botão Modo demo | E11 |
 | `/comecar` | Onboarding | M3 | Passo 1: cidade, finalidade, faixa de preço. Passo 2: cartões das 3 personas | E11 |
 | `/demo` | Modo demo | M3b | 3 cartões de persona; um toque cria a sessão `demo` com `demo_defaults` e vai para `/comparar` | E11 |
@@ -128,7 +128,7 @@ Rota: /...   Versão: 1   Status: ver APPROVAL.md
 
 ### Seção 7 · Painel do experimento
 
-**Painel do experimento (`features/experiment`).** Linhas de acurácia contra n\_train (3, 5, 10, 15, 25), uma por método, com faixa de ±1 desvio, e uma tabela com acurácia e perda logarítmica. Se a rodada tiver participantes simulados, um aviso fixo diz "Dados simulados".
+**Painel do experimento (`features/experiment`).** Linhas de acurácia contra n\_train (3, 5, 10, 15), uma por método, com faixa de ±1 desvio, e uma tabela com acurácia e perda logarítmica. Se a rodada tiver participantes simulados, um aviso fixo diz "Dados simulados".
 
 ### Seção 7 · Dados e estado
 

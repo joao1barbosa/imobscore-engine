@@ -21,7 +21,7 @@ nada
 - **Passos:**
   1. Primeiro, `theme.css`, para destravar E05: variáveis CSS no formato do shadcn (`--background`, `--foreground`, `--card`, `--card-foreground`, `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--muted-foreground`, `--accent`, `--border`, `--input`, `--ring`, `--destructive`, `--radius`) para o tema claro (`:root`) e o escuro (`.dark`), mais `--score-low`, `--score-mid`, `--score-high` e `--font-sans: "Geist Variable", sans-serif`. Contraste AA em todos os pares texto e fundo.
   2. `copy.ts`: `export const copy = { common: {...}, collection: {...}, compare: {...} } as const;` com todos os textos das telas M1 e M4, inclusive mensagens de erro e de validação. Textos com variáveis viram funções, por exemplo `progress: (i: number, n: number) => \`Par ${i} de ${n}\`\`.
-  3. Mockups no formato da seção 1.6. O cartão de imóvel mostra ilustração, título, bairro, preço, área, quartos, banheiros, vagas, idade e os selos "aceita pet" e "portaria 24 h". M1 inclui o formulário (código, consentimento, cidade, finalidade, faixa de preço, persona), o uso de M4 para os 40 pares e a tela de agradecimento.
+  3. Mockups no formato da seção 1.6. O cartão de imóvel mostra ilustração, título, bairro, preço, área, quartos, banheiros, vagas, idade, lazer, distância ao centro e os selos "aceita pet" e "portaria 24 h". M1 inclui a tela inicial (o que é o experimento, o que a pessoa fará, como as respostas serão usadas e que nenhum dado pessoal é coletado), o formulário (consentimento, faixa de preço, persona; Goiânia e compra são fixas, e o código vem do servidor), o uso de M4 para os 25 pares e a tela de agradecimento.
   4. Apresentar a João (1.6) e registrar a decisão em `APPROVAL.md`.
 
 ## Verificação

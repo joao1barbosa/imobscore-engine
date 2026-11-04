@@ -78,7 +78,7 @@ Rota: /...   Versão: 1   Status: ver APPROVAL.md
 
 | ID | Tela | Rota | Gate | Prazo de aprovação |
 | --- | --- | --- | --- | --- |
-| M1 | Coleta: código, consentimento, perguntas, persona e agradecimento | `/coleta` | G1 | qua 04/11, 16h |
+| M1 | Coleta: tela inicial, consentimento, faixa de preço, persona e agradecimento | `/coleta` | G1 | qua 04/11, 16h |
 | M4 | Comparação de um par (usada na coleta e na demo) | `/comparar` | G1 | qua 04/11, 16h |
 | M2 | Início | `/` | G2 | qui 05/11, 18h |
 | M3 | Onboarding em dois passos | `/comecar` | G2 | qui 05/11, 18h |
@@ -117,7 +117,7 @@ Rota: /...   Versão: 1   Status: ver APPROVAL.md
 
 | Rota | Tela | Mockup | Conteúdo | Tarefa |
 | --- | --- | --- | --- | --- |
-| `/coleta` | Coleta | M1 + M4 | Código do participante (P01 a P10), consentimento, cidade, finalidade, faixa de preço, persona, 40 pares e agradecimento | E08 (primeira a ficar pronta) |
+| `/coleta` | Coleta | M1 + M4 | Tela inicial, consentimento, faixa de preço (Goiânia, compra), persona, 25 pares e agradecimento; o servidor gera o código do participante | E08 (primeira a ficar pronta) |
 | `/` | Início | M2 | Frase "Pare de filtrar. Comece a escolher.", botão Começar e botão Modo demo | E11 |
 | `/comecar` | Onboarding | M3 | Passo 1: cidade, finalidade, faixa de preço. Passo 2: cartões das 3 personas | E11 |
 | `/demo` | Modo demo | M3b | 3 cartões de persona; um toque cria a sessão `demo` com `demo_defaults` e vai para `/comparar` | E11 |
@@ -189,9 +189,8 @@ class SessionCreate(BaseModel):
     price_min: Decimal = Field(gt=0)
     price_max: Decimal = Field(gt=0)
     persona_slug: Literal["familia", "investidor", "estudante"]
-    participant_code: str | None = Field(default=None, pattern=r"^P\d{2}$")
     consent: bool = False
-    # model_validator: price_min < price_max; collection exige participant_code e consent=True
+    # model_validator: price_min < price_max; collection exige consent=True, city="Goiânia" e purpose="sale"; o servidor gera participant_code
 
 class SessionOut(BaseModel):
     id: UUID; mode: str; city: str; purpose: str
@@ -256,4 +255,4 @@ class PosteriorOut(BaseModel):
 - **Cache:** o ranking é guardado em memória por `(session_id, n_comparisons, method)`, até 128 entradas.
 - **Erros:** formato único `{"detail": {"code": "...", "message": "..."}}`, com mensagem em pt-BR. Códigos: `session_not_found` (404), `listing_not_found` (404), `pair_already_answered` (409), `pair_out_of_order` (409), `session_done` (409), `validation_error` (422), `not_available` (501). Um handler global converte o `RequestValidationError` do FastAPI para esse formato.
 - **CORS:** liberado só para `http://localhost:5173` (desenvolvimento). Com o Docker Compose, o Nginx serve front-end e API na mesma origem.
-- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=40`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
+- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=25`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.

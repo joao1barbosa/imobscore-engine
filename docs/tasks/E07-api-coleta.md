@@ -10,7 +10,7 @@ Implementar as rotas de metadados, sessões e pares aleatórios usadas pela cole
 
 ## Arquivos permitidos
 
-`backend/app/schemas/__init__.py`, `meta.py`, `session.py`, `listing.py`, `pair.py`; `backend/app/services/listing_service.py` (`candidate_listings`), `session_service.py`, `pair_service.py`; `backend/app/api/v1/meta.py`, `sessions.py`; `backend/tests/api/test_meta.py`, `test_sessions.py`, `test_pairs_collection.py`.
+`backend/app/schemas/__init__.py`, `meta.py`, `session.py`, `listing.py`, `pair.py`; `backend/app/services/listing_service.py` (`candidate_listings`), `session_service.py`, `pair_service.py`; `backend/app/api/v1/__init__.py` (registrar as rotas novas), `meta.py`, `sessions.py`; `backend/app/deps.py` (acrescentar `get_session_or_404`, que levanta `ApiError` 404 `session_not_found`); `backend/tests/api/test_meta.py`, `test_sessions.py`, `test_pairs_collection.py`.
 
 ## Dependências
 
@@ -20,10 +20,10 @@ A03, E06
 
 - **Rotas:** `GET /meta/options`, `GET /meta/personas`, `POST /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/next-pair`, `POST /sessions/{id}/comparisons/{position}`, com os schemas e as regras da seção 6.
 - **`MetaOptions`:** `{ segments: [{ city, purpose, price_floor, price_ceiling }] }`, com o menor e o maior preço de cada segmento.
-- **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Na coleta, exige `participant_code` e `consent = true`, e grava `consent_at = now()`. O mesmo código pode abrir mais de uma sessão (o colega pode trocar de aparelho).
-- **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 40 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
+- **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Na coleta, exige `consent = true`, `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`) e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
+- **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 25 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
 - **Modos `demo` e `product`:** `POST /sessions` já funciona, mas `GET /next-pair` devolve `501 not_available` até a E10.
-- **Testes:** criação com e sem consentimento; 40 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 40º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
+- **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 na coleta fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
 
 ## Verificação
 
@@ -80,9 +80,8 @@ class SessionCreate(BaseModel):
     price_min: Decimal = Field(gt=0)
     price_max: Decimal = Field(gt=0)
     persona_slug: Literal["familia", "investidor", "estudante"]
-    participant_code: str | None = Field(default=None, pattern=r"^P\d{2}$")
     consent: bool = False
-    # model_validator: price_min < price_max; collection exige participant_code e consent=True
+    # model_validator: price_min < price_max; collection exige consent=True, city="Goiânia" e purpose="sale"; o servidor gera participant_code
 
 class SessionOut(BaseModel):
     id: UUID; mode: str; city: str; purpose: str
@@ -147,7 +146,7 @@ class PosteriorOut(BaseModel):
 - **Cache:** o ranking é guardado em memória por `(session_id, n_comparisons, method)`, até 128 entradas.
 - **Erros:** formato único `{"detail": {"code": "...", "message": "..."}}`, com mensagem em pt-BR. Códigos: `session_not_found` (404), `listing_not_found` (404), `pair_already_answered` (409), `pair_out_of_order` (409), `session_done` (409), `validation_error` (422), `not_available` (501). Um handler global converte o `RequestValidationError` do FastAPI para esse formato.
 - **CORS:** liberado só para `http://localhost:5173` (desenvolvimento). Com o Docker Compose, o Nginx serve front-end e API na mesma origem.
-- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=40`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
+- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=25`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
 
 ### Seção 4 · Tabelas usadas
 
@@ -201,8 +200,8 @@ CREATE TABLE sessions (
   price_min        numeric(12,2) NOT NULL,
   price_max        numeric(12,2) NOT NULL,
   persona_slug     text NOT NULL REFERENCES personas(slug),
-  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 40
-  participant_code text,                             -- só na coleta: P01..P10
+  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 25
+  participant_code text,                             -- só na coleta: gerado pelo servidor (P01, P02...)
   consent_at       timestamptz,                      -- obrigatório quando mode = 'collection'
   status           text NOT NULL DEFAULT 'comparing' CHECK (status IN ('comparing','done')),
   created_at       timestamptz NOT NULL DEFAULT now(),

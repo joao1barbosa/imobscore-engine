@@ -701,14 +701,14 @@ Nos dois pares o modelo está em 50%, mas por motivos diferentes. No par 1, toda
 
 ## 11. Avaliação: métricas e baselines
 
-O experimento responde a uma pergunta: com poucas escolhas, qual método acerta mais as preferências reais de uma pessoa em pares que ela respondeu, mas que o modelo nunca viu? Cada colega responde 40 pares aleatórios. Parte deles treina o modelo e outra parte, separada, testa.
+O experimento responde a uma pergunta: com poucas escolhas, qual método acerta mais as preferências reais de uma pessoa em pares que ela respondeu, mas que o modelo nunca viu? Cada colega responde 25 pares aleatórios. Parte deles treina o modelo e outra parte, separada, testa.
 
 ### 11.1 Treino e teste
 
 Avaliar um modelo nos mesmos pares usados para treiná-lo mede memória, e não generalização. Por isso, para cada colega:
 
 1. Sorteie 10 pares para teste e deixe-os de lado.
-2. Dos 30 restantes, use os n\_train primeiros para treinar, com n\_train ∈ {3, 5, 10, 15, 25}.
+2. Dos 15 restantes, use os n\_train primeiros para treinar, com n\_train ∈ {3, 5, 10, 15}.
 3. Meça nos 10 de teste.
 4. Repita com 20 sorteios diferentes (`split_seed` de 0 a 19) e tire a média e o desvio padrão. Com só 10 pares de teste, um sorteio isolado varia muito.
 

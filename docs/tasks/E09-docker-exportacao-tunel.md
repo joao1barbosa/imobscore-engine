@@ -20,7 +20,7 @@ E07, E08
 
 - **`backend/Dockerfile`:** `python:3.12-slim`; copiar o `uv` da imagem `ghcr.io/astral-sh/uv`; `WORKDIR /app`; `uv sync --frozen --no-dev`; `ENV PATH=/app/.venv/bin:$PATH`; `CMD sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"`.
 - **`frontend/Dockerfile`:** estágio de build com `node:24-alpine` e `corepack enable`, `pnpm install --frozen-lockfile`, `pnpm build`; estágio final `nginx:alpine` com o `dist/` em `/usr/share/nginx/html`.
-- **`nginx.conf`:** `location /api/ { proxy_pass http://api:8000; }` e `location / { try_files $uri /index.html; }`.
+- **`nginx.conf`:** `location /api/ { proxy_pass http://api:8000; }` e `location / { try_files $uri /index.html; }`. No bloco `server`, `access_log off;`, para o servidor não registrar o IP de quem responde à coleta, porque a tela inicial promete que nenhum dado pessoal é coletado.
 - **`export --out <arquivo>`:** grava JSON neste formato exato (lido pela A07):
 
 ```json
@@ -44,11 +44,11 @@ E07, E08
   ]
 }
 ```
-- **Regras do export:** só sessões `collection` com pelo menos 35 pares respondidos; se um código tiver mais de uma sessão, fica a de mais pares respondidos (empate: a mais recente); só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
+- **Regras do export:** só sessões `collection` com pelo menos 25 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
 
 ## Verificação
 
-`make up` a partir de um clone limpo, seguido de `make seed`, sobe tudo; `curl http://localhost:8080/api/v1/health` responde ok; `make tunnel` gera um endereço, e um celular fora da rede local completa os 40 pares por ele; `make export` gera um JSON válido com esse participante. **João envia o link aos colegas às 18h**, com o código de cada um (P01 a P10).
+`make up` a partir de um clone limpo, seguido de `make seed`, sobe tudo; `curl http://localhost:8080/api/v1/health` responde ok; `make tunnel` gera um endereço, e um celular fora da rede local completa os 25 pares por ele; `make export` gera um JSON válido com esse participante. **João envia o link aos colegas às 18h**; o mesmo link serve para todos.
 
 ## Regras gerais
 
@@ -165,8 +165,8 @@ CREATE TABLE sessions (
   price_min        numeric(12,2) NOT NULL,
   price_max        numeric(12,2) NOT NULL,
   persona_slug     text NOT NULL REFERENCES personas(slug),
-  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 40
-  participant_code text,                             -- só na coleta: P01..P10
+  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 25
+  participant_code text,                             -- só na coleta: gerado pelo servidor (P01, P02...)
   consent_at       timestamptz,                      -- obrigatório quando mode = 'collection'
   status           text NOT NULL DEFAULT 'comparing' CHECK (status IN ('comparing','done')),
   created_at       timestamptz NOT NULL DEFAULT now(),

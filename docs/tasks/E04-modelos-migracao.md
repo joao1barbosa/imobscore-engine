@@ -121,8 +121,8 @@ CREATE TABLE sessions (
   price_min        numeric(12,2) NOT NULL,
   price_max        numeric(12,2) NOT NULL,
   persona_slug     text NOT NULL REFERENCES personas(slug),
-  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 40
-  participant_code text,                             -- só na coleta: P01..P10
+  target_pairs     smallint NOT NULL,                 -- demo 3, produto 8, coleta 25
+  participant_code text,                             -- só na coleta: gerado pelo servidor (P01, P02...)
   consent_at       timestamptz,                      -- obrigatório quando mode = 'collection'
   status           text NOT NULL DEFAULT 'comparing' CHECK (status IN ('comparing','done')),
   created_at       timestamptz NOT NULL DEFAULT now(),
@@ -178,7 +178,7 @@ CREATE TABLE experiment_results (
   run_id           uuid NOT NULL,
   participant_code text NOT NULL,
   method           text NOT NULL CHECK (method IN ('equal','persona','mle','bayes')),
-  n_train          smallint NOT NULL,                -- 3, 5, 10, 15, 25
+  n_train          smallint NOT NULL,                -- 3, 5, 10, 15
   split_seed       integer NOT NULL,
   n_test           smallint NOT NULL,
   accuracy         double precision NOT NULL,
