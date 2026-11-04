@@ -44,5 +44,6 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · A02 · As descrições de `personas.yaml` são as dos mockups M1 aprovados · evita divergência entre a tela aprovada e os dados.
 - 2026-11-04 · E05 · Mantidos o preset "Nova", `form.tsx` adaptado ao Base UI, `sonner` e `next-themes` como dependências do componente `sonner`, e `src/lib/cn.ts` no lugar do pacote `cn` · o M1 aprovado usa `Form`, o plano lista `Sonner` e não prevê o pacote `cn`.
 - 2026-11-04 · A03 · `random_pairs` refaz o sorteio quando um caminho fica sem saída, até 100 vezes, e só então levanta `ValueError` · um sorteio guloso pode travar perto do limite de aparições, mesmo com solução possível.
+- 2026-11-04 · E06 · A checagem de `--if-empty` vem antes da checagem de sessões, invertendo os passos 1 e 2 do plano · como estava, `make demo` falharia depois da coleta, e com catálogo cheio nada é apagado.
 - 2026-11-04 · A01 · M4 vai à versão 3 só para retirar o estado de aluguel · consequência direta do pedido de João, sem outra mudança visual.
 - 2026-11-04 · A01 · E05, E06, E07, E10 e E17 tiveram as listas de arquivos ou os passos ajustados no plano e nas tarefas · decisão de João (Q8).

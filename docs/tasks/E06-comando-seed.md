@@ -19,8 +19,8 @@ A02, E04
 ## Especificação
 
 - **`seed [--force] [--if-empty] [--with-results]`:**
-  1. Se existir alguma linha em `sessions` e não houver `--force`, parar com a mensagem "Existem sessões; use --force para apagar tudo".
-  2. Com `--if-empty` e `listings` não vazia, não fazer nada além do passo 6.
+  1. Com `--if-empty` e `listings` não vazia, não fazer nada além do passo 6.
+  2. Se existir alguma linha em `sessions` e não houver `--force`, parar com a mensagem "Existem sessões; use --force para apagar tudo".
   3. Em uma transação: `TRUNCATE` de todas as tabelas, com `CASCADE`.
   4. Inserir `generate_catalog(settings.CATALOG_SEED)` em `listings` e as personas de `app/seed/personas.yaml` em `personas`.
   5. Para cada (cidade, finalidade): `T = raw_matrix(listings do segmento)`, `center, scale = fit_stats(T)` e uma linha em `feature_stats` por chave de `FEATURE_KEYS`.

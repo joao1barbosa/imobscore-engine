@@ -1243,8 +1243,8 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
 - [ ] **E06 · Comando seed** · qua 04/11, noite · depende de: A02, E04
   - **Arquivos:** `backend/app/cli.py` (app Typer, rodado com `python -m app.cli`; deixar as funções `simulate` e `evaluate` para a A07); `o arquivo termina com if __name__ == "__main__": app()`; `backend/app/services/__init__.py`; `backend/app/services/seed_service.py`; `backend/tests/services/test_seed.py`; `backend/tests/conftest.py` (acrescentar uma fixture de sessão, com `autouse=True`, que roda `alembic upgrade head` em `TEST_DATABASE_URL`).
   - **`seed [--force] [--if-empty] [--with-results]`:**
-    1. Se existir alguma linha em `sessions` e não houver `--force`, parar com a mensagem "Existem sessões; use --force para apagar tudo".
-    2. Com `--if-empty` e `listings` não vazia, não fazer nada além do passo 6.
+    1. Com `--if-empty` e `listings` não vazia, não fazer nada além do passo 6.
+    2. Se existir alguma linha em `sessions` e não houver `--force`, parar com a mensagem "Existem sessões; use --force para apagar tudo".
     3. Em uma transação: `TRUNCATE` de todas as tabelas, com `CASCADE`.
     4. Inserir `generate_catalog(settings.CATALOG_SEED)` em `listings` e as personas de `app/seed/personas.yaml` em `personas`.
     5. Para cada (cidade, finalidade): `T = raw_matrix(listings do segmento)`, `center, scale = fit_stats(T)` e uma linha em `feature_stats` por chave de `FEATURE_KEYS`.

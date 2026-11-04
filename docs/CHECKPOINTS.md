@@ -13,6 +13,13 @@ Protocolo na seção 1.4 de `docs/PLAN.md`. Cada registro traz data, módulo, pe
 
 ## CP2 · Modelo (A03) · qua 04/11
 
+- **Data:** 2026-11-04. **Módulo:** `backend/app/engine/model.py` e `backend/app/engine/pairs.py`. **Guia:** seções 3, 5 e 6.
+- **O que σ(wᵀd) significa para um par?** Resposta certa: a chance de o usuário escolher A em vez de B; no exemplo real, 0,74 indica mais chance de A. Claude acrescentou que é probabilidade e não certeza, que depende dos pesos e que inverter o par dá 0,26.
+- **Por que o modelo não tem viés?** Resposta certa: com b diferente de 0, dois imóveis idênticos não dariam 0,5. Claude acrescentou que b mediria preferência pela posição na tela, e que o sorteio de lados já evita isso.
+- **E se o peso do preço for −3, o que muda na escolha?** João pediu outra explicação e recebeu um exemplo resolvido com peso −2. Depois, calculou certo: a contribuição do preço vira −1,53, wᵀd cai para 0,027 e a chance fica perto de 0,5, com leve vantagem para A. Claude acrescentou que o peso não significa escolher sempre o mais barato: depende do tamanho da diferença de preço.
+- **Dúvidas respondidas:** como ler a pergunta 3.
+- **Entendido: sim**
+
 ## CP3 · Metropolis-Hastings e diagnósticos (A05) · qui 05/11
 
 ## CP4 · Afinidade, BALD e baselines (A06) · sex 06/11
