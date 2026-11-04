@@ -1,5 +1,6 @@
 """Testes do catálogo simulado, das personas e dos itens de vistoria."""
 
+from math import ceil
 from pathlib import Path
 
 import pytest
@@ -56,7 +57,8 @@ def test_values_respect_the_database_checks(catalog: list[ListingRow]) -> None:
         assert row.price_brl > 0
         assert row.area_m2 > 0
         assert 1 <= row.bedrooms <= 6
-        assert 1 <= row.bathrooms <= max(1, min(row.bedrooms, int(row.area_m2 // 25)))
+        max_bathrooms = max(1, min(row.bedrooms, int(row.area_m2 // 25)))
+        assert min(ceil(row.bedrooms / 2), max_bathrooms) <= row.bathrooms <= max_bathrooms
         assert 0 <= row.parking <= 4
         assert row.dist_center_km >= 0.3
         assert 0 <= row.age_years <= 40

@@ -1,7 +1,7 @@
 """Catálogo simulado e determinístico: 300 imóveis à venda em Goiânia (tarefa A02)."""
 
 from dataclasses import dataclass
-from math import exp, log
+from math import ceil, exp, log
 
 import numpy as np
 
@@ -70,7 +70,8 @@ def _generate_row(index: int, rng: np.random.Generator) -> ListingRow:
     area_m2 = round(exp(float(rng.normal(log_area, 0.18))), 1)
 
     max_bathrooms = max(1, min(bedrooms, int(area_m2 // 25)))
-    bathrooms = int(rng.integers(1, max_bathrooms + 1))
+    min_bathrooms = min(ceil(bedrooms / 2), max_bathrooms)
+    bathrooms = int(rng.integers(min_bathrooms, max_bathrooms + 1))
     parking = int(np.clip(round(area_m2 / 45 + float(rng.normal(0.0, 0.6))), 0, 4))
     age_years = int(rng.integers(0, 41))
 

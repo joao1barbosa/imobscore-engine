@@ -52,3 +52,4 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · E07 · `price_floor`, `price_ceiling` e os preços de `demo_defaults` são `float` · `Decimal` vira texto no JSON, e o slider e a validação do formulário precisam de números.
 - 2026-11-04 · E07 · A resposta do último par já passa a sessão a `done`, e o `GET /next-pair` seguinte devolve `204` · com `done: true` a tela não chama `next-pair`, então a sessão ficaria em `comparing`; repetir a última resposta devolve `409 session_done`.
 - 2026-11-04 · E07 · Os testes de API semeiam com uma fixture local em cada arquivo, usando `seed_database(db, get_settings())` · a E07 não pode editar `conftest.py`, e o banco de teste fica vazio entre os testes.
+- 2026-11-04 · A02 · Banheiros têm como mínimo a metade dos quartos, arredondada para cima, sem passar do máximo da Q10 · decisão de João (Q13), porque 16 dos 55 imóveis com 4 ou mais quartos tinham só 1 banheiro.
