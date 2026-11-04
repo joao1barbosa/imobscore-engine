@@ -4,6 +4,8 @@ Ambos os agentes acrescentam linhas; ninguém apaga (seção 1.3 de `docs/PLAN.m
 
 ## Em andamento
 
+- CP1 · 2026-11-04 · Checkpoint da A02 em andamento com João. Até o "Entendido: sim", o arquiteto não faz commit da A03.
+
 - A01 · 2026-11-04 · `theme.css`, `copy.ts` e os mockups M1 e M4 (versão 1) estão prontos na branch `feat/a01-tema-mockups`, fora de `main`. Aguardam João: aprovação de M1 e M4 (G1, até 16h) e autorização do commit. A E05 só começa quando o `theme.css` chegar a `main`. **Concluída em 2026-11-04, ver "Concluídas".**
 
 ## Concluídas (ID · data · resumo da verificação)
@@ -18,6 +20,7 @@ Ambos os agentes acrescentam linhas; ninguém apaga (seção 1.3 de `docs/PLAN.m
 - A01, complemento · 2026-11-04 · João confirmou a aprovação da versão 2 de M1 e M4. M4 foi à versão 3 só para retirar o estado de aluguel, depois que João restringiu o catálogo inteiro a Goiânia e compra; plano e tarefas atualizados. FIX-1 e FIX-2 conferidas pelo arquiteto: `CHECK` nos dois bancos, 25 pares e verificações passando.
 - FIX-1 · 2026-11-04 · `backend/app/models/session.py` e `backend/migrations/versions/0001_initial.py` com `CHECK (status IN ('comparing','done'))` (`ck_sessions_status_values`); `uv run alembic downgrade base && uv run alembic upgrade head` no banco `imobscore`; `uv run pytest -q` → 2 passed; `uv run ruff check .` → All checks passed!; `uv run ruff format --check .` → 24 files already formatted; `uv run alembic check` → No new upgrade operations detected; `\d sessions` → `ck_sessions_status_values`; inserção com `status = 'invalido'` recusada pelo banco.
 - FIX-2 · 2026-11-04 · `pairs_collection: int = 25` em `backend/app/config.py`, `PAIRS_COLLECTION=25` em `.env.example` e linha da coleta reescrita no `README.md` (25 pares, faixa de preço, sem código digitado); `cd backend && uv run pytest -q` → 2 passed; `uv run ruff check .` → All checks passed!; `uv run ruff format --check .` → 24 files already formatted; `get_settings().pairs_collection` → 25.
+- A02 · 2026-11-04 · `cd backend && uv run pytest tests/engine -q` → 26 passed; `uv run mypy app/engine` → sem erros; `uv run pytest -q` → 28 passed; Ruff limpo. 300 imóveis em Goiânia, à venda, com 99,3% dos preços entre R$ 150 mil e R$ 2,5 milhões (mediana de R$ 436.500) e intercepto mantido em 8,5. Candidatos da demo: Família 235, Investidor 248, Estudante 122. Isso libera a E06. CP1 pendente.
 
 ## Correções pendentes (FIX-n)
 
@@ -38,6 +41,7 @@ Formato: ID · pergunta · quem responde.
 - Q7 · Depois da Q6, ainda há duas pendências fora do que foi autorizado. (1) A seção 1.5 e o bloco do `AGENTS.md` na E01 de `docs/PLAN.md` ainda mandam ler o plano; o pedido novo está em `docs/tasks/README.md`. (2) O `CLAUDE.md` não manda o arquiteto levar às tarefas E as mudanças de especificação do plano, e sem isso o executor pode trabalhar com uma cópia velha. Atualizar os dois? · João · **Respondida em 2026-11-03: sim; atualizados a seção 1.5 e os blocos da E01 no plano, e o `CLAUDE.md`.**
 - Q8 · Três lacunas nas listas de arquivos fariam a E07 parar: (1) registrar as rotas novas exige editar `backend/app/api/v1/__init__.py`, fora das listas da E07 e da E10; (2) `get_session_or_404`, previsto em `deps.py` na seção 3, não foi pedido na E03, e a E07 não pode editar `deps.py`; (3) `conftest.py` não aplica a migração, então, depois de `make reset`, os testes que usam tabelas falham até `tests/test_migrations.py`, que roda por último, criá-las. Proposta: incluir esses dois arquivos na E07, `api/v1/__init__.py` na E10 e `tests/conftest.py` na E06, com uma fixture de sessão que roda `alembic upgrade head` no banco de teste, em `docs/PLAN.md` e `docs/tasks/`. Além disso, avisar na E05 que `index.css` deve ficar só com os três `@import` depois de `shadcn init`, porque as variáveis que esse comando grava viriam depois de `theme.css` e substituiriam o tema. Autoriza? · João · **Respondida em 2026-11-04: sim; plano e tarefas E05, E06, E07, E10 e E17 atualizados.**
 - Q9 · O cartão especificado na A01 não mostra `dist_center_km` nem `leisure_count`, embora `dist_center` e `leisure` estejam entre as 12 características (5.1). Quem responde à coleta não vê esses dados, então os pesos deles quase não aprendem com as escolhas, e o `explain` pode citar motivos que a pessoa nunca viu. Acrescentar "2,3 km do centro" e "2 itens de lazer" ao cartão de M4? · João · **Respondida em 2026-11-04: sim; M4 versão 2.**
+- Q10 · O catálogo segue a regra da A02 para banheiros (inteiro de 1 a quartos + 1), e o resultado parece pouco realista: 86 de 300 imóveis têm mais banheiros que quartos, e 38 têm 3 ou mais banheiros em menos de 80 m², como o `GYN-V-0001` (3 quartos, 4 banheiros, 66,2 m²). Os colegas veem esses cartões na coleta. Proposta: sortear de 1 até o número de quartos, sem passar de 1 banheiro a cada 25 m². Trocar depois do início da coleta mudaria os imóveis já respondidos. Muda? · João
 
 ## Bloqueios
 

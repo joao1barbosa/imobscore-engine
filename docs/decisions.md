@@ -38,5 +38,8 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · A02 · O catálogo inteiro fica em Goiânia e à venda, mantendo 300 imóveis (`GYN-V-0001` a `GYN-V-0300`), e substitui a decisão anterior de limitar só a coleta · decisão de João: a demo não deve mostrar imóveis para os quais não houve coleta.
 - 2026-11-04 · A02 · As colunas `city` e `purpose` e o `CHECK` com `rent` continuam no banco, e a API recusa outros valores em todos os modos · evita refazer a migração e preserva as fases seguintes; o MVP só grava um segmento.
 - 2026-11-04 · A02 · A persona Estudante passa a usar compra, de R$ 150 mil a R$ 350 mil · sem aluguel no catálogo, é a faixa mais barata plausível para esse perfil; confirmar com o catálogo gerado.
+- 2026-11-04 · A02 · O catálogo mantém o intercepto de preço em 8,5 · com ele, 99,3% dos preços ficam entre R$ 150 mil e R$ 2,5 milhões e a faixa da Estudante tem 122 candidatos.
+- 2026-11-04 · A02 · A A02 também cria `backend/app/engine/__init__.py`, só com os nomes de `features.py` · a E06 importa de `app.engine` e não depende da A03, que amplia esse arquivo.
+- 2026-11-04 · A02 · As descrições de `personas.yaml` são as dos mockups M1 aprovados · evita divergência entre a tela aprovada e os dados.
 - 2026-11-04 · A01 · M4 vai à versão 3 só para retirar o estado de aluguel · consequência direta do pedido de João, sem outra mudança visual.
 - 2026-11-04 · A01 · E05, E06, E07, E10 e E17 tiveram as listas de arquivos ou os passos ajustados no plano e nas tarefas · decisão de João (Q8).
