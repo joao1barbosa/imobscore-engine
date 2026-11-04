@@ -22,6 +22,13 @@ Protocolo na seção 1.4 de `docs/PLAN.md`. Cada registro traz data, módulo, pe
 
 ## CP3 · Metropolis-Hastings e diagnósticos (A05) · qui 05/11
 
+- **Data:** 2026-11-04. **Módulo:** `backend/app/engine/mcmc.py` e `backend/app/engine/diagnostics.py`. **Guia:** seções 7 a 9.
+- **O que a cadeia guarda a cada passo?** Resposta certa: o ponto atual; com a proposta rejeitada, ela fica no mesmo ponto. Claude acrescentou que o ponto repetido conta de novo como amostra, o que faz a frequência acompanhar a posteriori, e que só 1 a cada 8 estados é salvo depois do aquecimento.
+- **Por que a razão de Hastings não aparece no código?** João não sabia e pediu a explicação, com exemplo numérico. Depois, respondeu certo: a proposta é simétrica, então a razão vale 1; com uma proposta assimétrica, a linha do `accept` não representaria a posteriori. Claude acrescentou o termo que faltaria nessa linha e a diferença para o corte de P(D).
+- **E se o R-hat der 1,30?** João não sabia o que é o R-hat e pediu a explicação, com exemplo numérico. Depois, respondeu certo: as cadeias não concordam, o sistema roda de novo com tudo dobrado e, se falhar, marca `ok = false` sem bloquear. Claude acrescentou que o sistema não conhece a causa da falha e que o `ok = false` vira um alerta no painel do modelo.
+- **Dúvidas respondidas:** o que é o R-hat e o que é a razão de Hastings. Para a banca, João deve rever as seções 9.1 e 9.5 do guia, porque as perguntas 2 e 3 precisaram de explicação antes.
+- **Entendido: sim**
+
 ## CP4 · Afinidade, BALD e baselines (A06) · sex 06/11
 
 ## CP5 · Integração motor e API (A-REV2) · sáb 07/11
