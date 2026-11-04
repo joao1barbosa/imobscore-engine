@@ -181,7 +181,7 @@ def plot_accuracy_vs_ntrain(summary: Sequence[SummaryRow], path: Path) -> None:
         axis.plot(x, mean, color=color, linewidth=2, marker="o", label=METHOD_LABELS[method])
 
     axis.set_xticks(sorted({row.n_train for row in summary}))
-    axis.set_ylim(0.3, 1.0)
+    axis.set_ylim(0.2, 1.0)
     axis.set_xlabel("Pares usados no treino")
     axis.set_ylabel("Acurácia em pares nunca vistos")
     axis.set_title("Acurácia por número de pares de treino", loc="left")
@@ -222,7 +222,7 @@ def plot_accuracy_by_participant(rows: Sequence[ResultRow], path: Path) -> None:
     axis.set_xlabel("Participante")
     axis.set_ylabel("Acurácia em pares nunca vistos")
     axis.set_title(f"Acurácia por participante, com {BY_PARTICIPANT_N_TRAIN} pares", loc="left")
-    axis.legend(frameon=False, ncols=4, loc="upper left")
+    figure.legend(frameon=False, ncols=len(METHODS), loc="outside lower center")
     _style(axis)
     figure.savefig(path, dpi=150)
     plt.close(figure)

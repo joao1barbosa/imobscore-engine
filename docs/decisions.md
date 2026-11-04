@@ -72,3 +72,4 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · A07 · A simulação fica em `backend/app/analysis/simulation.py`, fora dos arquivos listados na tarefa, e reusa `candidate_listings` com uma sessão transitória · a regra de candidatos fica em um só lugar, e o executor não mexe em `analysis/`.
 - 2026-11-04 · A07 · `acc_sd` e `ll_sd` são o desvio padrão amostral sobre todas as linhas de cada método e n_train · a seção 5.9 pede o desvio sobre os splits; é a mesma conta para `summary.csv` e para `GET /experiment/summary`.
 - 2026-11-04 · A07 · Em cada split, a mesma ordem vale para todo n_train: o teste é o mesmo, e o treino só cresce · assim, a curva compara os números de pares sem variar os pares de teste.
+- 2026-11-04 · A07 · `AGENTS.md` proíbe comandos que apagam ou reiniciam o banco durante a coleta · a verificação da E09 rodou `make seed`, e o mesmo durante a coleta apagaria as respostas.

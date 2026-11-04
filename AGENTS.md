@@ -11,3 +11,4 @@ Antes de qualquer tarefa, leia o arquivo da tarefa pedida (docs/tasks/<ID>-*.md)
 - Termine só com todos os comandos de "Verificação" passando. Registre em docs/STATUS.md e faça um commit "tipo(escopo): ID título".
 - Commits e PRs não citam agentes nem ferramentas de IA: sem "Co-Authored-By", sem "Generated with" e sem menção equivalente.
 - Se uma verificação falhar duas vezes seguidas, pare e marque a tarefa como "precisa de revisão do arquiteto".
+- Durante a coleta, de 05/11 às 18h até 08/11 às 12h, o banco `imobscore` guarda respostas que não voltam: nunca rode `make seed`, `make reset`, `make up`, `make down`, `docker compose down` nem `seed --force`. Os testes usam só o banco `imobscore_test`, e a API de desenvolvimento pode rodar com `make dev`.
