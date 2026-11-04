@@ -22,11 +22,12 @@ nada
 
 ```markdown
 # ImobScore — instruções para o executor (papel E)
-Antes de qualquer tarefa, leia docs/PLAN.md (seções 1.3, 1.5, 1.7 e a tarefa pedida) e docs/STATUS.md.
+Antes de qualquer tarefa, leia o arquivo da tarefa pedida (docs/tasks/<ID>-*.md) e docs/STATUS.md.
+- O arquivo da tarefa é autocontido e é o que vale. Consulte docs/PLAN.md só se faltar algo nele, lendo apenas a seção necessária, nunca o arquivo inteiro.
 - Faça somente a tarefa E indicada no pedido. Uma por vez.
-- Edite apenas os arquivos listados no campo "Arquivos" da tarefa.
-- Nunca edite: backend/app/engine/, backend/app/seed/, backend/app/analysis/, backend/tests/engine/, docs/mockups/, frontend/src/styles/theme.css, frontend/src/lib/copy.ts, docs/PLAN.md.
-- Importe o motor apenas com "from app.engine import ..." (seção 5.10 do plano).
+- Edite apenas os arquivos listados em "Arquivos permitidos" no arquivo da tarefa.
+- Nunca edite: backend/app/engine/, backend/app/seed/, backend/app/analysis/, backend/tests/engine/, docs/mockups/, frontend/src/styles/theme.css, frontend/src/lib/copy.ts, docs/PLAN.md, docs/GUIDE.md, docs/tasks/.
+- Importe o motor apenas com "from app.engine import ..." (nomes da seção 5.10 do plano, reproduzida nas tarefas que a usam).
 - Textos de tela vêm de frontend/src/lib/copy.ts. Layout e cores vêm do mockup aprovado e de theme.css. Não escreva textos visíveis direto nos componentes.
 - Se algo não estiver especificado, não decida: escreva a pergunta em docs/STATUS.md, em "Perguntas abertas", e pare.
 - Não adicione dependências nem mude versões. Não apague, pule nem afrouxe testes.
@@ -42,6 +43,7 @@ Antes de qualquer tarefa, leia docs/PLAN.md e docs/STATUS.md.
 - Siga o protocolo de checkpoints da seção 1.4: ao terminar cada módulo do motor, explique a João, faça as 3 perguntas, espere cada resposta, tire todas as dúvidas e registre em docs/CHECKPOINTS.md. Só João declara "Entendido: sim". Sem isso, não faça commit do módulo seguinte.
 - Siga a seção 1.6 para mockups. Nenhuma tela vai para o executor sem "aprovado" em docs/mockups/APPROVAL.md.
 - Mantenha a interface da seção 5.10. Se precisar mudá-la, avise João e atualize docs/PLAN.md na mesma alteração.
+- Ao mudar uma especificação em docs/PLAN.md, leve a mudança, na mesma alteração, às tarefas E de docs/tasks/ que reproduzem o trecho.
 - Decisões não previstas: escolha a opção mais simples compatível com o plano e registre em docs/decisions.md.
 - Atualize docs/STATUS.md ao fim de cada tarefa.
 ```
@@ -93,4 +95,4 @@ reset:    ## apaga o banco (pede confirmação)
 
 ## Atenção
 
-Tarefa concluída. Depois dela, João mudou o `AGENTS.md` (Q6), então vale o arquivo atual, e não o bloco acima. A correção de 2026-11-03 também alterou uma palavra de `docs/PLAN.md` (Q5).
+Tarefa concluída. Os blocos de `AGENTS.md` e `CLAUDE.md` acima já trazem as mudanças pedidas por João nas perguntas Q6 e Q7.
