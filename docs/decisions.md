@@ -56,3 +56,5 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · A04 · As cores dos gráficos ficam em `theme.css`, como `--chart-1` a `--chart-4`, na ordem fixa bayes, mle, persona e equal · o tema é a única fonte de cor, e cada método mantém a cor em todos os gráficos.
 - 2026-11-04 · A04 · O cabeçalho vira o componente `PageHeader`, em `src/features/compare/page-header.tsx`, com a navegação entre Feed, Modelo e Experimento em M5, M6 e M7 · as telas de resultado precisam se alcançar sem depender do botão voltar do navegador.
 - 2026-11-04 · A04 · M5 mostra a mudança de posição só em Depois (subiu, desceu, manteve ou "Entrou no top 30"), e os motivos também só em Depois · reforça a troca entre Antes e Depois, e `Antes` não tem escolhas para explicar.
+- 2026-11-04 · E07 · A trava da sessão usa `SELECT ... FOR UPDATE` em `next-pair` e na resposta · serializa os pedidos da mesma sessão sem tratar exceção de banco, e também evita resposta dupla simultânea.
+- 2026-11-04 · E07 · `price_min` e `price_max` têm `max_digits=12` e `decimal_places=2`, o tamanho de `numeric(12,2)` · um valor maior viraria erro 500 em vez de 422.
