@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M2 · Início · ImobScore</title>
+<!-- Só nos mockups: CDN é permitido aqui (seção 1.8). As cores vêm do theme.css real. -->
+<link rel="stylesheet" href="../../frontend/src/styles/theme.css">
+<style>
+  @font-face {
+    font-family: "Geist Variable";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.68.0/dist/umd/lucide.min.js"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:is(.dark *));
+  @theme inline {
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-score-low: var(--score-low);
+    --color-score-mid: var(--score-mid);
+    --color-score-high: var(--score-high);
+    --color-score-foreground: var(--score-foreground);
+  }
+  @layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground font-sans antialiased; }
+    [data-lucide] { @apply inline-block size-4 shrink-0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const stateId = params.get("state");
+const theme = params.get("theme") === "dark" ? "dark" : "light";
+document.documentElement.classList.toggle("dark", theme === "dark");
+const brl = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const dec = (v, d = 1) => new Intl.NumberFormat("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const header = (active) => {
+  const link = (id, label) => `<a href="#" ${active === id ? 'aria-current="page"' : ""} class="rounded-md px-2 py-1 text-sm font-medium ${active === id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"} ${focusRing}">${label}</a>`;
+  return `<header class="border-b bg-card">
+    <div class="mx-auto flex h-12 max-w-5xl items-center justify-between gap-3 px-4 md:h-14">
+      <span class="font-semibold tracking-tight text-primary md:text-lg">ImobScore</span>
+      ${active ? `<nav class="flex items-center gap-1" aria-label="Navegação">${link("feed", "Feed")}${link("model", "Modelo")}${link("experiment", "Experimento")}</nav>` : ""}
+      <span class="${active ? "hidden md:inline" : ""} rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Catálogo de demonstração</span>
+    </div>
+  </header>`;
+};
+const shell = (inner, { active = null, width = "max-w-5xl" } = {}) => `
+  <div class="flex min-h-dvh flex-col">${header(active)}
+    <main class="mx-auto flex w-full ${width} flex-1 flex-col gap-4 px-4 py-5 md:gap-6 md:py-10">${inner}${active ? `<p class="text-center text-xs text-muted-foreground md:hidden">Catálogo de demonstração</p>` : ""}</main>
+  </div>`;
+const message = (icon, tone, title, description, action = "", opts = {}) => shell(`
+  <div class="my-auto flex flex-col items-center gap-3 text-center">
+    <span class="grid size-12 place-items-center rounded-full ${tone}"><i data-lucide="${icon}" class="size-6"></i></span>
+    <h1 class="text-xl font-semibold tracking-tight">${title}</h1>
+    <p class="max-w-md text-sm text-muted-foreground">${description}</p>${action}
+  </div>`, opts);
+const retry = `<button type="button" class="mt-1 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 ${focusRing}"><i data-lucide="refresh-cw"></i>Tentar de novo</button>`;
+const toast = (text) => `<div role="alert" class="fixed inset-x-4 bottom-4 mx-auto flex max-w-md items-center gap-2 rounded-lg border border-destructive bg-card p-3 text-sm font-medium text-card-foreground shadow-lg"><i data-lucide="triangle-alert" class="text-destructive"></i>${text}</div>`;
+const skeleton = (h) => `<div class="${h} w-full animate-pulse rounded-md bg-muted"></div>`;
+const PERSONAS = [
+  { slug: "familia", icon: "users", name: "Família", description: "Prioriza espaço, quartos e vagas, mesmo pagando um pouco mais.", range: [350000, 900000] },
+  { slug: "investidor", icon: "trending-up", name: "Investidor", description: "Busca bom preço e localização, pensando em alugar ou revender.", range: [200000, 600000] },
+  { slug: "estudante", icon: "graduation-cap", name: "Estudante", description: "Quer pagar pouco e morar perto do centro.", range: [150000, 350000] },
+];
+
+const step = (n, icon, title, body) => `
+  <li class="flex gap-3 rounded-xl border bg-card p-4 shadow-sm md:flex-col md:p-5">
+    <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground"><i data-lucide="${icon}"></i></span>
+    <div class="flex flex-col gap-1"><h2 class="font-semibold">${n}. ${title}</h2><p class="text-sm text-muted-foreground">${body}</p></div>
+  </li>`;
+const SCREENS = {
+  normal: () => shell(`
+    <div class="flex flex-col gap-3 md:items-center md:py-8 md:text-center">
+      <h1 class="text-4xl font-semibold tracking-tight md:text-6xl">Pare de filtrar. Comece a escolher.</h1>
+      <p class="max-w-2xl text-lg text-muted-foreground md:text-xl">O ImobScore aprende do que você gosta com poucas escolhas entre dois imóveis e monta um ranking só para você.</p>
+      <div class="mt-2 flex flex-col gap-2 md:flex-row">
+        <a href="#" class="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-base font-medium text-primary-foreground hover:opacity-90 ${focusRing}">Começar<i data-lucide="arrow-right"></i></a>
+        <a href="#" class="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-input bg-card px-6 text-base font-medium hover:bg-accent ${focusRing}"><i data-lucide="zap"></i>Modo demo</a>
+      </div>
+    </div>
+    <ol class="grid gap-3 md:grid-cols-3 md:gap-6">
+      ${step(1, "user-round", "Escolha um perfil", "Ele é só o ponto de partida.")}
+      ${step(2, "mouse-pointer-click", "Compare alguns pares", "Em cada par, diga qual imóvel você prefere.")}
+      ${step(3, "list-ordered", "Veja seu ranking", "Cada imóvel recebe uma nota de afinidade, com o grau de incerteza.")}
+    </ol>
+    <p class="text-center text-sm text-muted-foreground">Imóveis fictícios à venda em Goiânia-GO. <a href="#" class="font-medium text-foreground underline ${focusRing}">Ver os resultados do experimento</a></p>`),
+};
+const STATES = [
+  { id: "normal", label: "Normal", note: "Tela sem dados da API: não tem estados de carregando, vazio nem erro." },
+];
+
+
+function renderGallery() {
+  const q = (s) => `?state=${s.id}&theme=${theme}`;
+  const frame = (s, width, height, name) => `
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium text-muted-foreground">${name}</span>
+      <div class="overflow-hidden rounded-lg border-2 bg-card">
+        <iframe title="${s.id} ${name}" loading="lazy" data-w="${width}" data-frame="${s.id}-${width}"
+          src="${q(s)}&frame=${s.id}-${width}" style="width:${width}px;height:${height}px;border:0;transform-origin:0 0;display:block"></iframe>
+      </div>
+    </div>`;
+  document.getElementById("root").innerHTML = `
+    <div class="min-h-dvh bg-muted p-6">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">M2 · Início <span class="font-normal text-muted-foreground">versão 1</span></h1>
+          <p class="text-sm text-muted-foreground">Rota /. Especificação em m2-inicio.md.</p>
+        </div>
+        <a class="rounded-md border bg-card px-3 py-2 text-sm font-medium" href="?theme=${theme === "dark" ? "light" : "dark"}">Ver no tema ${theme === "dark" ? "claro" : "escuro"}</a>
+      </header>
+      <div class="flex flex-col gap-10">
+        ${STATES.map((s) => `
+          <section>
+            <h2 class="text-lg font-semibold">${s.label}</h2>
+            <p class="mb-2 text-sm text-muted-foreground">${s.note} <a class="underline" target="_blank" href="${q(s)}">Abrir em tamanho real</a></p>
+            <div class="flex items-start gap-6">
+              ${frame(s, 375, 667, "Celular · 375 px")}
+              ${frame(s, 1280, 800, "Notebook · 1280 px")}
+            </div>
+          </section>`).join("")}
+      </div>
+    </div>`;
+  const fit = () => {
+    const available = document.getElementById("root").clientWidth - 48 - 375 - 24 - 8;
+    const scale = Math.min(1, Math.max(0.4, available / 1280));
+    document.querySelectorAll("iframe[data-w='1280']").forEach((f) => {
+      f.style.transform = `scale(${scale})`;
+      const box = f.parentElement;
+      box.style.width = `${1280 * scale + 4}px`;
+      box.style.height = `${parseFloat(f.style.height) * scale + 4}px`;
+    });
+  };
+  addEventListener("resize", fit);
+  addEventListener("message", (e) => {
+    const f = document.querySelector(`iframe[data-frame="${e.data?.frame}"]`);
+    if (f && e.data.height > parseFloat(f.style.height)) { f.style.height = `${e.data.height}px`; fit(); }
+  });
+  fit();
+}
+
+if (stateId) {
+  document.getElementById("root").innerHTML = (SCREENS[stateId] || SCREENS[STATES[0].id])();
+  if (typeof afterRender === "function") afterRender(stateId);
+} else {
+  renderGallery();
+}
+if (window.lucide) lucide.createIcons();
+if (stateId && parent !== window) {
+  const frame = params.get("frame");
+  const send = () => parent.postMessage({ frame, height: document.documentElement.scrollHeight }, "*");
+  addEventListener("load", send);
+  new ResizeObserver(send).observe(document.body);
+}
+</script>
+</body>
+</html>

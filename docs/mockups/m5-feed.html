@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M5 · Feed · ImobScore</title>
+<!-- Só nos mockups: CDN é permitido aqui (seção 1.8). As cores vêm do theme.css real. -->
+<link rel="stylesheet" href="../../frontend/src/styles/theme.css">
+<style>
+  @font-face {
+    font-family: "Geist Variable";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.68.0/dist/umd/lucide.min.js"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:is(.dark *));
+  @theme inline {
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-score-low: var(--score-low);
+    --color-score-mid: var(--score-mid);
+    --color-score-high: var(--score-high);
+    --color-score-foreground: var(--score-foreground);
+  }
+  @layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground font-sans antialiased; }
+    [data-lucide] { @apply inline-block size-4 shrink-0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const stateId = params.get("state");
+const theme = params.get("theme") === "dark" ? "dark" : "light";
+document.documentElement.classList.toggle("dark", theme === "dark");
+const brl = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const dec = (v, d = 1) => new Intl.NumberFormat("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const header = (active) => {
+  const link = (id, label) => `<a href="#" ${active === id ? 'aria-current="page"' : ""} class="rounded-md px-2 py-1 text-sm font-medium ${active === id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"} ${focusRing}">${label}</a>`;
+  return `<header class="border-b bg-card">
+    <div class="mx-auto flex h-12 max-w-5xl items-center justify-between gap-3 px-4 md:h-14">
+      <span class="font-semibold tracking-tight text-primary md:text-lg">ImobScore</span>
+      ${active ? `<nav class="flex items-center gap-1" aria-label="Navegação">${link("feed", "Feed")}${link("model", "Modelo")}${link("experiment", "Experimento")}</nav>` : ""}
+      <span class="${active ? "hidden md:inline" : ""} rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Catálogo de demonstração</span>
+    </div>
+  </header>`;
+};
+const shell = (inner, { active = null, width = "max-w-5xl" } = {}) => `
+  <div class="flex min-h-dvh flex-col">${header(active)}
+    <main class="mx-auto flex w-full ${width} flex-1 flex-col gap-4 px-4 py-5 md:gap-6 md:py-10">${inner}${active ? `<p class="text-center text-xs text-muted-foreground md:hidden">Catálogo de demonstração</p>` : ""}</main>
+  </div>`;
+const message = (icon, tone, title, description, action = "", opts = {}) => shell(`
+  <div class="my-auto flex flex-col items-center gap-3 text-center">
+    <span class="grid size-12 place-items-center rounded-full ${tone}"><i data-lucide="${icon}" class="size-6"></i></span>
+    <h1 class="text-xl font-semibold tracking-tight">${title}</h1>
+    <p class="max-w-md text-sm text-muted-foreground">${description}</p>${action}
+  </div>`, opts);
+const retry = `<button type="button" class="mt-1 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 ${focusRing}"><i data-lucide="refresh-cw"></i>Tentar de novo</button>`;
+const toast = (text) => `<div role="alert" class="fixed inset-x-4 bottom-4 mx-auto flex max-w-md items-center gap-2 rounded-lg border border-destructive bg-card p-3 text-sm font-medium text-card-foreground shadow-lg"><i data-lucide="triangle-alert" class="text-destructive"></i>${text}</div>`;
+const skeleton = (h) => `<div class="${h} w-full animate-pulse rounded-md bg-muted"></div>`;
+const PERSONAS = [
+  { slug: "familia", icon: "users", name: "Família", description: "Prioriza espaço, quartos e vagas, mesmo pagando um pouco mais.", range: [350000, 900000] },
+  { slug: "investidor", icon: "trending-up", name: "Investidor", description: "Busca bom preço e localização, pensando em alugar ou revender.", range: [200000, 600000] },
+  { slug: "estudante", icon: "graduation-cap", name: "Estudante", description: "Quer pagar pouco e morar perto do centro.", range: [150000, 350000] },
+];
+
+const ITEMS = [{"code": "GYN-V-0051", "kind": "house", "title": "Casa de 3 quartos no Setor Universitário", "neighborhood": "Setor Universitário", "price": 487000.0, "area": 122.5, "bedrooms": 3, "bathrooms": 2, "parking": 2, "age": 40, "leisure": 0, "dist": 2.41, "pet": true, "doorman": true, "before": {"score": 65, "lo": 4, "hi": 100, "rank": 26}, "after": {"score": 79, "lo": 21, "hi": 100, "rank": 1, "reasons": [{"text": "perto do centro", "positive": true}, {"text": "é casa", "positive": true}, {"text": "mais espaçoso", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}, {"code": "GYN-V-0224", "kind": "apartment", "title": "Apartamento de 3 quartos no Setor Central", "neighborhood": "Setor Central", "price": 424000.0, "area": 86.7, "bedrooms": 3, "bathrooms": 3, "parking": 2, "age": 29, "leisure": 2, "dist": 0.9, "pet": true, "doorman": true, "before": {"score": 68, "lo": 9, "hi": 99, "rank": 10}, "after": {"score": 78, "lo": 19, "hi": 100, "rank": 2, "reasons": [{"text": "perto do centro", "positive": true}, {"text": "perto de 3 quartos", "positive": true}, {"text": "mais antigo", "positive": false}]}}, {"code": "GYN-V-0263", "kind": "house", "title": "Casa de 3 quartos no Setor Marista", "neighborhood": "Setor Marista", "price": 539000.0, "area": 101.3, "bedrooms": 3, "bathrooms": 2, "parking": 2, "age": 22, "leisure": 0, "dist": 2.62, "pet": true, "doorman": true, "before": {"score": 63, "lo": 6, "hi": 99, "rank": 42}, "after": {"score": 76, "lo": 22, "hi": 99, "rank": 3, "reasons": [{"text": "é casa", "positive": true}, {"text": "perto do centro", "positive": true}, {"text": "perto de 3 quartos", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}, {"code": "GYN-V-0008", "kind": "apartment", "title": "Apartamento de 3 quartos no Setor Universitário", "neighborhood": "Setor Universitário", "price": 505000.0, "area": 105.2, "bedrooms": 3, "bathrooms": 2, "parking": 3, "age": 16, "leisure": 0, "dist": 2.16, "pet": true, "doorman": true, "before": {"score": 68, "lo": 8, "hi": 99, "rank": 8}, "after": {"score": 75, "lo": 13, "hi": 100, "rank": 4, "reasons": [{"text": "perto do centro", "positive": true}, {"text": "perto de 3 quartos", "positive": true}, {"text": "mais espaçoso", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}, {"code": "GYN-V-0201", "kind": "house", "title": "Casa de 4 quartos no Setor Central", "neighborhood": "Setor Central", "price": 661000.0, "area": 115.7, "bedrooms": 4, "bathrooms": 2, "parking": 2, "age": 10, "leisure": 0, "dist": 1.01, "pet": true, "doorman": false, "before": {"score": 60, "lo": 1, "hi": 100, "rank": 69}, "after": {"score": 71, "lo": 6, "hi": 100, "rank": 5, "reasons": [{"text": "perto do centro", "positive": true}, {"text": "é casa", "positive": true}, {"text": "mais quartos", "positive": true}, {"text": "sem portaria", "positive": false}]}}, {"code": "GYN-V-0066", "kind": "apartment", "title": "Apartamento de 4 quartos no Jardim Goiás", "neighborhood": "Jardim Goiás", "price": 552000.0, "area": 122.7, "bedrooms": 4, "bathrooms": 4, "parking": 3, "age": 17, "leisure": 3, "dist": 4.6, "pet": true, "doorman": true, "before": {"score": 79, "lo": 10, "hi": 100, "rank": 1}, "after": {"score": 66, "lo": 4, "hi": 100, "rank": 20, "reasons": [{"text": "mais quartos", "positive": true}, {"text": "mais espaçoso", "positive": true}, {"text": "mais vagas", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}, {"code": "GYN-V-0041", "kind": "house", "title": "Casa de 4 quartos no Setor Pedro Ludovico", "neighborhood": "Setor Pedro Ludovico", "price": 817000.0, "area": 183.7, "bedrooms": 4, "bathrooms": 4, "parking": 4, "age": 25, "leisure": 1, "dist": 4.69, "pet": false, "doorman": true, "before": {"score": 73, "lo": 1, "hi": 100, "rank": 2}, "after": {"score": 63, "lo": 0, "hi": 100, "rank": 32, "reasons": [{"text": "mais espaçoso", "positive": true}, {"text": "é casa", "positive": true}, {"text": "mais quartos", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}, {"code": "GYN-V-0243", "kind": "apartment", "title": "Apartamento de 3 quartos no Setor Bueno", "neighborhood": "Setor Bueno", "price": 577000.0, "area": 113.3, "bedrooms": 3, "bathrooms": 3, "parking": 3, "age": 9, "leisure": 1, "dist": 4.43, "pet": true, "doorman": true, "before": {"score": 70, "lo": 8, "hi": 100, "rank": 3}, "after": {"score": 62, "lo": 4, "hi": 99, "rank": 34, "reasons": [{"text": "perto de 3 quartos", "positive": true}, {"text": "mais espaçoso", "positive": true}, {"text": "mais vagas", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}, {"code": "GYN-V-0261", "kind": "house", "title": "Casa de 4 quartos no Setor Marista", "neighborhood": "Setor Marista", "price": 574000.0, "area": 117.0, "bedrooms": 4, "bathrooms": 3, "parking": 3, "age": 27, "leisure": 1, "dist": 3.32, "pet": true, "doorman": false, "before": {"score": 70, "lo": 4, "hi": 100, "rank": 4}, "after": {"score": 67, "lo": 5, "hi": 100, "rank": 19, "reasons": [{"text": "é casa", "positive": true}, {"text": "mais quartos", "positive": true}, {"text": "mais espaçoso", "positive": true}, {"text": "sem portaria", "positive": false}]}}, {"code": "GYN-V-0091", "kind": "apartment", "title": "Apartamento de 3 quartos no Setor Marista", "neighborhood": "Setor Marista", "price": 468000.0, "area": 101.2, "bedrooms": 3, "bathrooms": 3, "parking": 2, "age": 8, "leisure": 1, "dist": 3.29, "pet": true, "doorman": true, "before": {"score": 70, "lo": 14, "hi": 99, "rank": 5}, "after": {"score": 71, "lo": 14, "hi": 99, "rank": 6, "reasons": [{"text": "perto de 3 quartos", "positive": true}, {"text": "perto do centro", "positive": true}, {"text": "mais espaçoso", "positive": true}, {"text": "mais caro que o típico", "positive": false}]}}];
+const art = (kind) => kind === "house"
+  ? `<svg viewBox="0 0 96 72" class="h-full w-full" role="img" aria-label="Ilustração de uma casa"><path d="M48 12 12 44h72z" fill="var(--primary)"/><rect x="24" y="44" width="48" height="20" fill="var(--muted-foreground)"/><rect x="42" y="50" width="12" height="14" fill="var(--accent)"/><rect x="16" y="64" width="64" height="4" rx="2" fill="var(--primary)"/></svg>`
+  : `<svg viewBox="0 0 96 72" class="h-full w-full" role="img" aria-label="Ilustração de um prédio"><rect x="30" y="8" width="36" height="56" rx="2" fill="var(--primary)"/>${[16, 32, 48].map((y) => `<rect x="36" y="${y}" width="8" height="8" rx="1" fill="var(--accent)"/><rect x="52" y="${y}" width="8" height="8" rx="1" fill="var(--accent)"/>`).join("")}<rect x="16" y="62" width="64" height="4" rx="2" fill="var(--muted-foreground)"/></svg>`;
+const plural = (n, a, b) => (n === 1 ? a : b);
+const band = (s) => (s >= 70 ? "bg-score-high" : s >= 40 ? "bg-score-mid" : "bg-score-low");
+const spec = (icon, text) => `<li class="flex items-center gap-1.5"><i data-lucide="${icon}" class="text-muted-foreground"></i>${text}</li>`;
+function moved(item) {
+  const a = item.after.rank, b = item.before.rank;
+  if (b > 30) return `<span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"><i data-lucide="sparkles" class="size-3.5"></i>Entrou no top 30</span>`;
+  if (a === b) return `<span class="text-xs font-medium text-muted-foreground">Manteve a posição</span>`;
+  const up = a < b;
+  return `<span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"><i data-lucide="${up ? "arrow-up" : "arrow-down"}" class="size-3.5"></i>${up ? "Subiu" : "Desceu"} ${Math.abs(a - b)}</span>`;
+}
+function card(item, mode, position) {
+  const v = item[mode];
+  const reasons = mode === "after" ? `<ul class="flex flex-wrap gap-1.5">${v.reasons.map((r) => `<li class="inline-flex items-center gap-1 rounded-md ${r.positive ? "bg-secondary text-secondary-foreground" : "border bg-card text-muted-foreground"} px-2 py-0.5 text-xs font-medium"><i data-lucide="${r.positive ? "plus" : "minus"}" class="size-3"></i>${r.text}</li>`).join("")}</ul>` : "";
+  return `<li data-code="${item.code}" class="flex gap-3 rounded-xl border bg-card p-3 text-card-foreground shadow-sm md:gap-5 md:p-4" style="transition:transform 500ms cubic-bezier(.2,.8,.2,1)">
+    <div class="hidden size-24 shrink-0 rounded-lg bg-accent p-2 md:block">${art(item.kind)}</div>
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-semibold tabular-nums text-muted-foreground">${position}º</span>
+        ${mode === "after" ? moved(item) : ""}
+      </div>
+      <div>
+        <p class="text-lg font-semibold tracking-tight md:text-xl">${brl(item.price)}</p>
+        <h2 class="text-sm font-medium leading-snug md:text-base">${item.title}</h2>
+        <p class="text-xs text-muted-foreground md:text-sm">${item.neighborhood} · Goiânia</p>
+      </div>
+      <ul class="flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm">
+        ${spec("ruler", dec(item.area) + " m²")}${spec("bed-double", `${item.bedrooms} ${plural(item.bedrooms, "quarto", "quartos")}`)}${spec("bath", `${item.bathrooms} ${plural(item.bathrooms, "banheiro", "banheiros")}`)}${spec("car-front", item.parking === 0 ? "Sem vaga" : `${item.parking} ${plural(item.parking, "vaga", "vagas")}`)}${spec("calendar-days", item.age === 0 ? "Novo" : `${item.age} ${plural(item.age, "ano", "anos")}`)}${spec("dumbbell", item.leisure === 0 ? "Sem lazer" : `Lazer: ${item.leisure} ${plural(item.leisure, "item", "itens")}`)}${spec("map-pin", `${dec(item.dist)} km do centro`)}
+      </ul>
+      ${reasons}
+    </div>
+    <div class="flex w-20 shrink-0 flex-col items-center gap-1 text-center md:w-24">
+      <span tabindex="0" title="${v.score}% de chance de você preferir este a um imóvel típico" aria-label="${v.score}% de chance de você preferir este a um imóvel típico"
+        class="grid size-14 place-items-center rounded-full ${band(v.score)} text-xl font-semibold tabular-nums text-score-foreground md:size-16 md:text-2xl ${focusRing}">${v.score}</span>
+      <span class="text-xs text-muted-foreground">entre ${v.lo} e ${v.hi}</span>
+    </div>
+  </li>`;
+}
+const ordered = (mode) => [...ITEMS].sort((a, b) => a[mode].rank - b[mode].rank);
+const listHtml = (mode) => ordered(mode).map((it, i) => card(it, mode, it[mode].rank)).join("");
+const toggle = (mode) => {
+  const b = (id, label) => `<button type="button" role="tab" data-mode="${id}" aria-selected="${mode === id}" class="h-10 flex-1 rounded-md px-5 text-sm font-medium md:flex-none ${mode === id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"} ${focusRing}">${label}</button>`;
+  return `<div role="tablist" aria-label="Comparar o ranking" class="flex gap-1 rounded-lg bg-secondary p-1 md:self-start">${b("before", "Antes")}${b("after", "Depois")}</div>`;
+};
+const explain = { before: "Antes: só o perfil, sem nenhuma escolha sua.", after: "Depois: ajustado pelas suas 3 escolhas." };
+const topBar = (mode) => `
+  <div class="flex flex-col gap-1"><h1 class="text-2xl font-semibold tracking-tight md:text-3xl">Seu ranking</h1>
+  <p class="text-muted-foreground">Perfil Família · 3 escolhas respondidas</p></div>
+  <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">${toggle(mode)}<p id="explain" class="text-sm font-medium" aria-live="polite">${explain[mode]}</p></div>`;
+const OPTS = { active: "feed", width: "max-w-3xl" };
+const cta = `<a href="#" class="inline-flex h-11 items-center justify-center gap-2 self-center rounded-md border border-input bg-card px-5 text-sm font-medium hover:bg-accent ${focusRing}"><i data-lucide="chart-no-axes-column"></i>Ver o que o modelo aprendeu</a>`;
+const feedScreen = (mode) => shell(`${topBar(mode)}<ol id="feed" class="flex flex-col gap-3">${listHtml(mode)}</ol>${cta}`, OPTS);
+const SCREENS = {
+  after: () => feedScreen("after"),
+  before: () => feedScreen("before"),
+  "no-pairs": () => shell(`
+    <div class="flex flex-col gap-1"><h1 class="text-2xl font-semibold tracking-tight md:text-3xl">Seu ranking</h1><p class="text-muted-foreground">Perfil Família · nenhuma escolha respondida</p></div>
+    <p class="flex items-center gap-2 rounded-lg bg-muted p-3 text-sm font-medium"><i data-lucide="info" class="text-primary"></i>Este ranking usa só o perfil. Compare alguns pares para ajustá-lo.</p>
+    <ol class="flex flex-col gap-3">${ordered("before").slice(0, 4).map((it) => card(it, "before", it.before.rank)).join("")}</ol>`, OPTS),
+  loading: () => shell(`<div class="flex flex-col gap-1"><h1 class="text-2xl font-semibold tracking-tight md:text-3xl">Seu ranking</h1><p class="text-muted-foreground">Perfil Família · 3 escolhas respondidas</p></div>
+    <div aria-busy="true" class="flex flex-col gap-3"><span class="sr-only" role="status">Calculando seu ranking</span>${skeleton("h-36")}${skeleton("h-36")}${skeleton("h-36")}</div>`, OPTS),
+  empty: () => message("search-x", "bg-secondary text-secondary-foreground", "Nenhum imóvel nesta faixa", "Comece de novo com uma faixa de preço mais ampla.", `<a href="#" class="mt-1 inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground ${focusRing}">Começar de novo</a>`, OPTS),
+  error: () => message("triangle-alert", "bg-destructive text-destructive-foreground", "Não foi possível calcular seu ranking", "Suas escolhas estão salvas. Tente de novo.", retry, OPTS),
+};
+function afterRender() {
+  const list = document.getElementById("feed");
+  if (!list) return;
+  let mode = stateId === "before" ? "before" : "after";
+  document.querySelectorAll("[data-mode]").forEach((btn) => btn.addEventListener("click", () => {
+    const next = btn.dataset.mode;
+    if (next === mode) return;
+    const first = new Map([...list.children].map((el) => [el.dataset.code, el.getBoundingClientRect().top]));
+    mode = next;
+    list.innerHTML = listHtml(mode);
+    if (window.lucide) lucide.createIcons();
+    document.getElementById("explain").textContent = explain[mode];
+    document.querySelectorAll("[data-mode]").forEach((b) => {
+      const on = b.dataset.mode === mode;
+      b.setAttribute("aria-selected", on);
+      b.className = `h-10 flex-1 rounded-md px-5 text-sm font-medium md:flex-none ${on ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"} ${focusRing}`;
+    });
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    [...list.children].forEach((el) => {
+      const dy = first.get(el.dataset.code) - el.getBoundingClientRect().top;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${dy}px)`;
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = "transform 500ms cubic-bezier(.2,.8,.2,1)"; el.style.transform = ""; }));
+    });
+  }));
+}
+const STATES = [
+  { id: "after", label: "Depois (normal)", note: "Clique em Antes: os cartões trocam de lugar, com animação. É o momento uau da demo. O mockup mostra só os imóveis do topo de cada lista, com a posição real entre os 244 candidatos." },
+  { id: "before", label: "Antes", note: "Só o perfil. Os motivos ficam ocultos aqui, para o contraste com o Depois ser só de posição e nota." },
+  { id: "no-pairs", label: "Sem escolhas", note: "Sessão com 0 pares: sem a alternância, com um aviso." },
+  { id: "loading", label: "Carregando", note: "Skeletons, sem a alternância." },
+  { id: "empty", label: "Vazio", note: "A API devolveu items vazio." },
+  { id: "error", label: "Erro", note: "GET /feed falhou." },
+];
+
+
+function renderGallery() {
+  const q = (s) => `?state=${s.id}&theme=${theme}`;
+  const frame = (s, width, height, name) => `
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium text-muted-foreground">${name}</span>
+      <div class="overflow-hidden rounded-lg border-2 bg-card">
+        <iframe title="${s.id} ${name}" loading="lazy" data-w="${width}" data-frame="${s.id}-${width}"
+          src="${q(s)}&frame=${s.id}-${width}" style="width:${width}px;height:${height}px;border:0;transform-origin:0 0;display:block"></iframe>
+      </div>
+    </div>`;
+  document.getElementById("root").innerHTML = `
+    <div class="min-h-dvh bg-muted p-6">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">M5 · Feed <span class="font-normal text-muted-foreground">versão 1</span></h1>
+          <p class="text-sm text-muted-foreground">Rota /feed. Clique em Antes e Depois para ver a reordenação. Dados calculados com o catálogo real, em uma aproximação da posteriori. Especificação em m5-feed.md.</p>
+        </div>
+        <a class="rounded-md border bg-card px-3 py-2 text-sm font-medium" href="?theme=${theme === "dark" ? "light" : "dark"}">Ver no tema ${theme === "dark" ? "claro" : "escuro"}</a>
+      </header>
+      <div class="flex flex-col gap-10">
+        ${STATES.map((s) => `
+          <section>
+            <h2 class="text-lg font-semibold">${s.label}</h2>
+            <p class="mb-2 text-sm text-muted-foreground">${s.note} <a class="underline" target="_blank" href="${q(s)}">Abrir em tamanho real</a></p>
+            <div class="flex items-start gap-6">
+              ${frame(s, 375, 667, "Celular · 375 px")}
+              ${frame(s, 1280, 800, "Notebook · 1280 px")}
+            </div>
+          </section>`).join("")}
+      </div>
+    </div>`;
+  const fit = () => {
+    const available = document.getElementById("root").clientWidth - 48 - 375 - 24 - 8;
+    const scale = Math.min(1, Math.max(0.4, available / 1280));
+    document.querySelectorAll("iframe[data-w='1280']").forEach((f) => {
+      f.style.transform = `scale(${scale})`;
+      const box = f.parentElement;
+      box.style.width = `${1280 * scale + 4}px`;
+      box.style.height = `${parseFloat(f.style.height) * scale + 4}px`;
+    });
+  };
+  addEventListener("resize", fit);
+  addEventListener("message", (e) => {
+    const f = document.querySelector(`iframe[data-frame="${e.data?.frame}"]`);
+    if (f && e.data.height > parseFloat(f.style.height)) { f.style.height = `${e.data.height}px`; fit(); }
+  });
+  fit();
+}
+
+if (stateId) {
+  document.getElementById("root").innerHTML = (SCREENS[stateId] || SCREENS[STATES[0].id])();
+  if (typeof afterRender === "function") afterRender(stateId);
+} else {
+  renderGallery();
+}
+if (window.lucide) lucide.createIcons();
+if (stateId && parent !== window) {
+  const frame = params.get("frame");
+  const send = () => parent.postMessage({ frame, height: document.documentElement.scrollHeight }, "*");
+  addEventListener("load", send);
+  new ResizeObserver(send).observe(document.body);
+}
+</script>
+</body>
+</html>

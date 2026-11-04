@@ -35,6 +35,12 @@
   --score-mid: oklch(0.49 0.1 75);
   --score-high: oklch(0.47 0.09 165);
   --score-foreground: oklch(0.99 0.004 90);
+
+  /* Séries dos gráficos, em ordem fixa: nunca reutilizar para estados nem para texto. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
 }
 
 .dark {
@@ -62,6 +68,11 @@
   --score-mid: oklch(0.8 0.12 80);
   --score-high: oklch(0.78 0.12 165);
   --score-foreground: oklch(0.2 0.02 210);
+
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
 }
 
 @theme inline {
@@ -93,6 +104,10 @@
   --color-score-mid: var(--score-mid);
   --color-score-high: var(--score-high);
   --color-score-foreground: var(--score-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
 }
 
 @layer base {

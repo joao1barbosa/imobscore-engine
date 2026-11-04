@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M6 · Painel do modelo · ImobScore</title>
+<!-- Só nos mockups: CDN é permitido aqui (seção 1.8). As cores vêm do theme.css real. -->
+<link rel="stylesheet" href="../../frontend/src/styles/theme.css">
+<style>
+  @font-face {
+    font-family: "Geist Variable";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.68.0/dist/umd/lucide.min.js"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:is(.dark *));
+  @theme inline {
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-score-low: var(--score-low);
+    --color-score-mid: var(--score-mid);
+    --color-score-high: var(--score-high);
+    --color-score-foreground: var(--score-foreground);
+  }
+  @layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground font-sans antialiased; }
+    [data-lucide] { @apply inline-block size-4 shrink-0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const stateId = params.get("state");
+const theme = params.get("theme") === "dark" ? "dark" : "light";
+document.documentElement.classList.toggle("dark", theme === "dark");
+const brl = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const dec = (v, d = 1) => new Intl.NumberFormat("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const header = (active) => {
+  const link = (id, label) => `<a href="#" ${active === id ? 'aria-current="page"' : ""} class="rounded-md px-2 py-1 text-sm font-medium ${active === id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"} ${focusRing}">${label}</a>`;
+  return `<header class="border-b bg-card">
+    <div class="mx-auto flex h-12 max-w-5xl items-center justify-between gap-3 px-4 md:h-14">
+      <span class="font-semibold tracking-tight text-primary md:text-lg">ImobScore</span>
+      ${active ? `<nav class="flex items-center gap-1" aria-label="Navegação">${link("feed", "Feed")}${link("model", "Modelo")}${link("experiment", "Experimento")}</nav>` : ""}
+      <span class="${active ? "hidden md:inline" : ""} rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Catálogo de demonstração</span>
+    </div>
+  </header>`;
+};
+const shell = (inner, { active = null, width = "max-w-5xl" } = {}) => `
+  <div class="flex min-h-dvh flex-col">${header(active)}
+    <main class="mx-auto flex w-full ${width} flex-1 flex-col gap-4 px-4 py-5 md:gap-6 md:py-10">${inner}${active ? `<p class="text-center text-xs text-muted-foreground md:hidden">Catálogo de demonstração</p>` : ""}</main>
+  </div>`;
+const message = (icon, tone, title, description, action = "", opts = {}) => shell(`
+  <div class="my-auto flex flex-col items-center gap-3 text-center">
+    <span class="grid size-12 place-items-center rounded-full ${tone}"><i data-lucide="${icon}" class="size-6"></i></span>
+    <h1 class="text-xl font-semibold tracking-tight">${title}</h1>
+    <p class="max-w-md text-sm text-muted-foreground">${description}</p>${action}
+  </div>`, opts);
+const retry = `<button type="button" class="mt-1 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 ${focusRing}"><i data-lucide="refresh-cw"></i>Tentar de novo</button>`;
+const toast = (text) => `<div role="alert" class="fixed inset-x-4 bottom-4 mx-auto flex max-w-md items-center gap-2 rounded-lg border border-destructive bg-card p-3 text-sm font-medium text-card-foreground shadow-lg"><i data-lucide="triangle-alert" class="text-destructive"></i>${text}</div>`;
+const skeleton = (h) => `<div class="${h} w-full animate-pulse rounded-md bg-muted"></div>`;
+const PERSONAS = [
+  { slug: "familia", icon: "users", name: "Família", description: "Prioriza espaço, quartos e vagas, mesmo pagando um pouco mais.", range: [350000, 900000] },
+  { slug: "investidor", icon: "trending-up", name: "Investidor", description: "Busca bom preço e localização, pensando em alugar ou revender.", range: [200000, 600000] },
+  { slug: "estudante", icon: "graduation-cap", name: "Estudante", description: "Quer pagar pouco e morar perto do centro.", range: [150000, 350000] },
+];
+
+const WEIGHTS = [{"key": "log_price", "label": "Preço", "prior_mean": -1.0, "prior_lo": -2.64, "prior_hi": 0.6, "post_mean": -0.91, "lo": -2.53, "hi": 0.63}, {"key": "log_area", "label": "Área", "prior_mean": 0.8, "prior_lo": -0.85, "prior_hi": 2.46, "post_mean": 0.69, "lo": -0.89, "hi": 2.22}, {"key": "bedrooms", "label": "Quartos", "prior_mean": 0.6, "prior_lo": -1.1, "prior_hi": 2.25, "post_mean": 0.59, "lo": -1.09, "hi": 2.27}, {"key": "bedrooms_sq", "label": "Distância de 3 quartos", "prior_mean": -0.4, "prior_lo": -2.05, "prior_hi": 1.18, "post_mean": -0.39, "lo": -2.02, "hi": 1.29}, {"key": "bathrooms", "label": "Banheiros", "prior_mean": 0.4, "prior_lo": -1.22, "prior_hi": 1.99, "post_mean": 0.13, "lo": -1.45, "hi": 1.76}, {"key": "parking", "label": "Vagas", "prior_mean": 0.5, "prior_lo": -1.11, "prior_hi": 2.11, "post_mean": 0.25, "lo": -1.35, "hi": 1.87}, {"key": "dist_center", "label": "Distância do centro", "prior_mean": -0.3, "prior_lo": -1.98, "prior_hi": 1.34, "post_mean": -1.13, "lo": -2.54, "hi": 0.19}, {"key": "age", "label": "Idade", "prior_mean": -0.3, "prior_lo": -1.95, "prior_hi": 1.35, "post_mean": -0.22, "lo": -1.81, "hi": 1.37}, {"key": "is_house", "label": "Casa", "prior_mean": 0.5, "prior_lo": -1.18, "prior_hi": 2.15, "post_mean": 0.63, "lo": -0.86, "hi": 2.14}, {"key": "leisure", "label": "Lazer", "prior_mean": 0.4, "prior_lo": -1.24, "prior_hi": 2.0, "post_mean": 0.04, "lo": -1.46, "hi": 1.47}, {"key": "pet", "label": "Aceita pet", "prior_mean": 0.3, "prior_lo": -1.36, "prior_hi": 1.96, "post_mean": 0.74, "lo": -0.78, "hi": 2.3}, {"key": "doorman", "label": "Portaria 24 h", "prior_mean": 0.4, "prior_lo": -1.25, "prior_hi": 2.05, "post_mean": 0.77, "lo": -0.76, "hi": 2.27}];
+const TRACE = [[0.14, -0.66, -0.56, -0.06, -0.66, -0.59, -1.44, -2.14, -2.26, -1.72, -1.35, -1.22, -1.61, -1.45, -1.5, -1.95, -1.29, 0.12, -0.92, -1.08, -0.7, -0.29, 0.23, 0.28, -0.6, -0.15, 0.57, 0.62, 0.5, 0.5, -0.06, -0.41, -1.06, -0.96, -0.48, -1.58, -1.59, -1.84, -2.12, -1.42, -2.36, -1.9, -1.93, -1.85, -0.48, -1.1, -2.42, -2.81, -2.54, -0.75, -0.44, 0.29, 0.14, 0.34, -0.95, 0.01, 1.33, 0.19, -0.58, -1.07, -1.24, -0.57, -0.26, -0.92, -0.94, -1.43, -1.05, -1.51, -0.26, -0.32, -0.88, -0.28, -1.17, -0.58, -0.34, 0.22, -0.82, -1.48, -1.55, -1.72, -0.26, -0.32, 0.05, 0.25, 0.59, -0.64, -0.32, -0.66, -0.22, -0.27, -0.28, -1.0, -1.47, -1.25, -1.76, -1.92, -2.18, -2.03, -0.49, -0.48, -1.52, -1.53, -1.62, -0.9, -0.32, -1.22, -1.7, -0.55, 0.3, -1.14, -1.8, -1.48, -0.95, -0.6, 0.42, 0.42, -0.22, -0.23, -0.73, -0.67, -1.08, -1.03, -1.28, -1.54, -1.54, -1.59, -0.66, 0.03, -0.42, -0.82, -0.97, -0.3, -0.09, -0.91, -0.73, 0.18, 0.2, 0.02, -0.51, -0.72, -1.19, -2.16, -1.74, -2.1, -2.7, -2.14, -0.89, -0.27, 0.26, 0.03, 0.03, -0.57, -1.55, -1.21, -2.57, -2.17, -1.78, -1.39, -0.14, -0.15, 0.12, -0.36, -0.64, -1.2, -1.09, -1.44, -1.26, -0.98, -0.5, -1.33, -1.17, -1.14, -1.17, -1.38, -1.38, -2.34, -1.38, -0.4, -0.48, -0.05, -0.05, 0.54, 0.53, 0.09, 0.7, -0.06, -1.23, 0.27, 0.14, -0.82, -1.9, -1.26, -1.05, -0.8, -0.33, -0.0, -1.36, -0.08, -1.54, -2.06, -1.76, -1.33, -0.05, -0.39, -0.9, -0.21, 0.36, -1.07, -1.41, -0.88, -0.26, -0.26, -0.06, -0.82, -0.55, -0.54, -0.86, -0.54, -1.32, -0.6, -0.94, -0.51, -0.16, 0.87, -0.91, 0.01, -0.66, -1.37, -1.14, -0.16, -0.34, 0.01, -0.56, -1.95, -2.29, -1.94, -0.43, -0.73, -0.84, -0.03, -0.34, -0.83, -1.51, -2.23, -1.88, -1.75, -2.11, -1.87, -2.11, -0.65], [-0.44, -1.01, -1.06, -1.39, -1.99, -1.8, -1.33, -1.58, -2.46, -1.88, -1.39, -1.37, -1.28, -1.53, -1.08, -0.83, 0.64, -0.29, -0.98, -0.58, -0.71, -1.19, -0.41, -0.82, -2.19, -1.94, -1.21, -1.83, -2.26, -1.62, -2.3, -1.71, -1.86, -1.29, -1.19, -0.91, -0.91, -0.7, -1.95, -1.55, -0.42, -0.86, -0.78, -0.52, -0.16, -1.68, -1.6, -1.05, -2.0, -1.16, -1.62, -1.47, -0.14, -0.37, -1.13, -2.04, -1.42, -1.52, -1.4, -0.88, -0.69, -0.77, -0.41, -0.08, -0.73, 0.17, 0.43, -1.04, -0.43, -0.85, -1.5, -1.48, 0.16, 0.05, -0.24, -1.81, -1.47, -0.36, -1.11, -1.11, -1.46, -1.88, -2.21, -2.9, -1.69, -1.68, -1.07, -0.85, 0.19, 0.05, 0.02, -1.7, -1.73, -1.72, -1.83, -2.87, -1.98, -2.66, -1.87, -2.47, -2.45, -1.78, -0.22, -0.34, 0.01, -0.9, -0.87, -1.26, -1.91, -1.9, -0.89, -1.97, -1.97, -2.31, -1.71, -2.12, -0.99, -1.66, -1.67, -2.4, -1.64, -1.12, -0.71, -1.54, -2.89, -2.1, -1.55, -2.43, -1.87, -0.59, -0.82, -1.5, -1.69, -0.89, -0.85, -0.91, -1.95, -1.85, -1.92, -0.72, -0.99, -1.17, -1.78, -2.98, -2.19, -0.86, -0.65, -1.08, -0.74, -2.04, -1.5, -1.62, -1.2, -1.32, -1.31, -1.77, -1.64, -1.41, -0.99, -1.31, -1.62, -2.29, -1.85, -2.01, -1.5, -1.44, -1.54, -1.85, -1.96, -1.29, -1.71, -2.31, -2.78, -2.12, -2.17, -1.43, -0.86, -1.29, -0.86, -0.37, -1.24, -1.44, -1.18, -0.16, -2.25, -2.51, -1.98, -1.63, -1.55, -1.14, -0.8, -1.78, -0.43, -2.06, -2.42, -1.62, -0.8, -0.62, -0.51, -1.18, -0.09, -0.86, -0.58, -2.12, -2.42, -1.89, -1.92, -0.57, -0.91, -1.41, -0.95, -0.87, -0.98, -1.6, -1.95, -1.31, -1.68, -2.61, -0.9, -1.04, -0.89, -0.99, -0.37, 0.15, 0.25, -0.45, -1.94, -0.5, -1.8, -1.19, -1.7, -2.28, -1.82, -1.55, -1.55, -2.46, -2.15, -2.91, -1.07, -1.01, -1.42, -0.64, -1.05, -2.12, -1.41, -1.07, -0.67, -0.74, -0.67, -0.67], [-2.68, -2.73, -2.24, -0.57, -0.78, -1.07, -1.19, -0.73, -0.65, -0.79, -0.58, -1.24, -1.87, -1.62, -2.13, -1.73, -2.12, -2.19, -2.1, -1.14, -1.39, -2.18, -1.74, -1.33, -1.24, -0.33, -0.07, 0.66, 0.1, -0.22, -0.67, -0.74, -0.89, -0.52, -0.52, -0.33, -0.19, -0.3, -0.07, -0.63, -0.27, -0.6, -1.71, -2.61, -1.01, -0.27, -1.29, -1.23, -1.2, -1.53, -1.15, -1.57, -1.73, -1.28, 0.4, -1.45, -0.98, -1.63, -1.95, -1.24, -0.61, -0.23, -0.01, -0.32, 0.22, 0.08, 0.27, -0.24, 0.11, -1.05, -1.12, -1.4, -1.0, -1.74, -1.32, -1.88, -1.11, -1.19, -1.19, -2.24, -1.98, -1.14, 0.5, 0.28, -0.03, -0.08, -0.09, 0.48, 0.24, -1.35, -0.64, -1.17, -1.66, -1.11, -1.5, -2.12, -1.51, -2.07, -1.15, -0.91, -1.33, -1.1, -1.15, -0.7, -1.24, -1.15, -0.69, 0.08, 0.08, -0.77, -1.05, -1.23, -0.66, -0.88, -0.25, 0.69, 0.67, 0.07, -0.29, -0.17, -0.23, -1.4, -1.93, -1.47, -1.51, -0.86, -1.7, -1.69, -1.27, -0.02, 0.24, -0.51, -0.62, -1.47, -1.29, -1.14, -0.75, -1.56, -1.38, -2.08, -2.08, -2.43, -2.19, -0.62, -1.78, -1.92, -1.49, -0.69, -0.65, -0.33, -1.04, -0.69, -0.59, -0.17, 0.16, -0.61, -0.7, -0.57, -0.62, -0.32, 0.03, 0.01, 0.23, 0.3, -0.33, -0.41, -0.51, -0.02, 0.07, -0.95, -0.22, 0.66, 0.25, -0.54, -0.63, -0.27, -0.55, -0.15, 0.16, 0.43, -0.13, -1.16, -0.07, 0.03, -1.61, -1.8, -0.84, -1.06, -0.99, -1.68, -1.91, -2.35, -1.57, -1.88, -1.88, -0.34, 0.15, -0.55, 0.5, 0.11, 0.1, -1.03, 0.38, -0.12, -1.03, -0.83, -1.94, -1.21, -0.56, -0.61, -0.44, -2.33, -1.84, -1.89, -1.33, -2.07, -0.97, -1.6, -1.31, -1.97, -0.23, 0.07, 0.09, 0.09, 0.15, -0.05, -0.73, 0.07, -0.73, -1.83, -2.44, -2.63, -1.97, -2.23, -2.39, -2.99, -3.1, -1.72, -0.69, -1.93, -1.89, -1.65, -1.68, -1.26, -1.55, -1.92, -2.29, -1.58, -1.35, -0.54], [-1.01, -0.83, -0.33, -0.67, -1.15, -1.43, -1.69, -0.72, -0.89, -2.25, -2.51, -0.48, 0.03, -0.24, -0.24, 0.63, 0.63, 0.93, 0.16, 0.09, -2.12, -2.08, -2.1, -1.56, -1.95, -1.76, -2.36, -0.89, -0.87, -1.25, -0.5, -1.07, 0.36, -0.73, -0.72, -0.51, 0.24, -0.23, 0.29, -0.54, -0.49, -1.0, -0.82, -2.05, -2.51, -1.44, -0.92, -1.41, -0.51, -0.41, -0.14, -0.12, 1.16, -0.81, -1.19, -1.17, -0.72, -0.77, -1.37, -1.46, -0.75, -0.06, -0.6, -0.33, -1.97, -1.43, 0.2, 0.72, -0.09, 1.61, 1.51, 0.91, 0.58, 0.76, -0.48, -0.72, -1.63, -1.52, -0.95, -1.41, -1.31, -0.97, -0.51, 0.16, -0.24, -0.51, -1.8, -1.47, -0.42, -1.11, -0.94, -0.52, -0.12, -0.05, -0.48, -1.32, -0.43, 0.01, -0.43, 0.01, 0.08, 0.12, 0.38, 0.22, -0.39, -0.17, -0.58, 0.06, 0.37, -0.33, 0.55, 0.01, -0.92, -2.17, -1.71, -1.46, -0.89, -1.81, -1.98, -2.01, -2.57, -2.18, -1.57, -0.65, -1.08, -1.34, -1.91, -1.87, -1.77, -1.8, -1.43, -1.48, -1.15, -1.57, -1.36, -0.61, -1.6, -1.31, -1.0, -1.24, -1.35, -1.23, -0.89, -1.64, -0.74, -1.0, -1.48, -0.95, -1.95, -2.3, -1.55, -1.14, -1.52, -1.25, -1.47, -0.83, -0.32, -0.73, -0.28, 0.47, 1.0, -0.46, -0.48, -0.12, -1.35, -0.64, -1.07, 0.14, -0.47, -1.52, -2.19, -2.14, -2.48, -1.93, -1.96, -2.21, -1.61, -1.24, -0.59, -0.96, -0.66, -0.34, -0.06, 0.34, 0.4, -0.65, -1.33, -0.57, -0.38, -2.94, -1.52, -2.06, -1.16, -1.71, -1.07, -0.2, -0.26, -0.68, -0.74, -0.44, -0.75, -2.07, -1.4, -1.25, -0.85, -1.22, -2.06, -2.26, -1.69, -1.86, -0.5, -0.31, -1.15, -1.32, -2.87, -2.09, -1.05, -1.1, -1.07, -0.44, -0.15, 0.76, 0.37, -1.22, -1.22, -0.03, -0.47, 0.31, -0.11, 0.37, -0.57, -1.63, -1.35, -1.17, -1.38, -1.52, -0.34, -0.33, 0.12, 0.67, -0.37, -2.19, -0.7, -0.76, -0.07, -1.85, -1.69, -2.47, -0.6, -2.0]];
+const OPTS = { active: "model", width: "max-w-5xl" };
+const num = (v, d = 2) => dec(v, d);
+const legendItem = (color, label, line = false) => `<span class="inline-flex items-center gap-1.5 text-sm text-muted-foreground"><span class="${line ? "h-0.5 w-4" : "size-2.5 rounded-full"}" style="background:${color}"></span>${label}</span>`;
+const panel = (title, subtitle, inner) => `<section class="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6"><div><h2 class="text-lg font-semibold">${title}</h2>${subtitle ? `<p class="text-sm text-muted-foreground">${subtitle}</p>` : ""}</div>${inner}</section>`;
+const tile = (label, value, hint, bad) => `<div class="flex flex-col gap-1 rounded-lg ${bad ? "border border-destructive" : ""} bg-muted p-3 md:p-4"><span class="text-sm text-muted-foreground">${label}</span><span class="text-2xl font-semibold tabular-nums">${value}</span><span class="text-xs text-muted-foreground">${hint}</span></div>`;
+const diagnostics = (bad) => panel("A cadeia convergiu?", "", `
+  ${bad ? `<p role="alert" class="flex items-start gap-2 rounded-lg border border-destructive p-3 text-sm font-medium"><i data-lucide="triangle-alert" class="mt-0.5 text-destructive"></i>Os diagnósticos ficaram fora da faixa nesta rodada. Os pesos podem estar menos confiáveis.</p>` : `<p class="flex items-center gap-2 text-sm font-medium"><i data-lucide="circle-check" class="text-primary"></i>Diagnósticos dentro da faixa esperada.</p>`}
+  <div class="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+    ${tile("Aceitação", bad ? "9%" : "27%", "Parte dos passos aceitos. Entre 15% e 50% é saudável.", bad)}
+    ${tile("R-hat", bad ? "1,12" : "1,01", "Perto de 1: as cadeias concordam.", bad)}
+    ${tile("ESS", bad ? "180" : "612", "Amostras independentes equivalentes. Acima de 400 é bom.", bad)}
+    ${tile("Tempo", "190 ms", "Tempo para recalcular depois da última escolha.")}
+  </div>`);
+const table = `<details class="text-sm"><summary class="cursor-pointer font-medium ${focusRing}">Ver como tabela</summary>
+  <div class="mt-2 overflow-x-auto"><table class="w-full min-w-[420px] text-left tabular-nums"><thead class="text-muted-foreground"><tr><th class="py-1 font-medium">Característica</th><th class="font-medium">Priori</th><th class="font-medium">Posteriori</th><th class="font-medium">5% a 95%</th></tr></thead>
+  <tbody>${WEIGHTS.map((w) => `<tr class="border-t"><td class="py-1">${w.label}</td><td>${num(w.prior_mean)}</td><td>${num(w.post_mean)}</td><td>${num(w.lo)} a ${num(w.hi)}</td></tr>`).join("")}</tbody></table></div></details>`;
+const weightsPanel = (priorOnly) => panel("O que pesa para você", priorOnly ? "Ainda sem escolhas: os pesos são só os do perfil." : "À direita do zero, a característica aumenta sua preferência; à esquerda, reduz. A barra vai de 5% a 95%.", `
+  <div class="flex flex-wrap gap-4">${priorOnly ? "" : legendItem("var(--chart-1)", "Depois das suas escolhas")}${legendItem("var(--chart-2)", "Só o perfil")}</div>
+  <div id="weights" data-prior-only="${priorOnly ? 1 : 0}"></div>${table}`);
+const tracePanel = panel("Traço das cadeias", "Cada linha é uma cadeia percorrendo os valores possíveis de um peso. Linhas misturadas indicam que elas concordam.", `
+  <div class="flex flex-col gap-1.5 md:w-72"><label for="feature" class="text-sm font-medium">Peso</label>
+  <button id="feature" type="button" class="flex h-11 items-center justify-between rounded-md border border-input bg-card px-3 text-base ${focusRing}"><span>Distância do centro</span><i data-lucide="chevron-down" class="text-muted-foreground"></i></button></div>
+  <div class="flex flex-wrap gap-4">${[1, 2, 3, 4].map((i) => legendItem(`var(--chart-${i})`, `Cadeia ${i}`, true)).join("")}</div>
+  <div id="trace"></div>`);
+const intro = (sub) => `<div class="flex flex-col gap-1"><h1 class="text-2xl font-semibold tracking-tight md:text-3xl">O que o modelo aprendeu</h1><p class="text-muted-foreground">${sub}</p></div>`;
+const SCREENS = {
+  normal: () => shell(intro("Perfil Família · 3 escolhas respondidas") + weightsPanel(false) + diagnostics(false) + tracePanel, OPTS),
+  alert: () => shell(intro("Perfil Família · 3 escolhas respondidas") + weightsPanel(false) + diagnostics(true) + tracePanel, OPTS),
+  "no-pairs": () => shell(intro("Perfil Família · nenhuma escolha respondida") + weightsPanel(true), OPTS),
+  loading: () => shell(intro("Perfil Família · 3 escolhas respondidas") + `<div aria-busy="true" class="flex flex-col gap-4"><span class="sr-only" role="status">Carregando o modelo</span>${skeleton("h-96")}${skeleton("h-40")}</div>`, OPTS),
+  error: () => message("triangle-alert", "bg-destructive text-destructive-foreground", "Não foi possível carregar o modelo", "Suas escolhas estão salvas. Tente de novo.", retry, OPTS),
+};
+function drawWeights(el) {
+  const priorOnly = el.dataset.priorOnly === "1";
+  const width = el.clientWidth, narrow = width < 500, left = narrow ? 134 : 170, right = 12, rowH = 30, top = 4, bottom = 24;
+  const min = -3, max = 3, x = (v) => left + ((Math.max(min, Math.min(max, v)) - min) / (max - min)) * (width - left - right);
+  const height = top + rowH * WEIGHTS.length + bottom;
+  const textC = css("--muted-foreground"), fg = css("--foreground"), grid = css("--border"), surf = css("--card");
+  let s = `<svg width="${width}" height="${height}" role="img" aria-label="Pesos de cada característica, antes e depois das escolhas">`;
+  [-3, -2, -1, 0, 1, 2, 3].forEach((t) => { s += `<line x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${height - bottom}" stroke="${t === 0 ? textC : grid}" stroke-width="1"/><text x="${x(t)}" y="${height - 8}" text-anchor="middle" font-size="12" fill="${textC}">${t < 0 ? "−" + -t : t}</text>`; });
+  WEIGHTS.forEach((w, i) => {
+    const y = top + rowH * i + rowH / 2;
+    s += `<text x="0" y="${y + 4}" font-size="${narrow ? 12 : 14}" fill="${fg}">${w.label}</text>`;
+    const mark = (lo, hi, mean, color, dy, label) => `<g><title>${w.label}, ${label}: ${num(mean)} (de ${num(lo)} a ${num(hi)})</title><line x1="${x(lo)}" x2="${x(hi)}" y1="${y + dy}" y2="${y + dy}" stroke="${color}" stroke-width="2" stroke-linecap="round"/><circle cx="${x(mean)}" cy="${y + dy}" r="4.5" fill="${color}" stroke="${surf}" stroke-width="2"/></g>`;
+    s += mark(w.prior_lo, w.prior_hi, w.prior_mean, css("--chart-2"), priorOnly ? 0 : 5, "só o perfil");
+    if (!priorOnly) s += mark(w.lo, w.hi, w.post_mean, css("--chart-1"), -5, "depois das escolhas");
+  });
+  el.innerHTML = s + "</svg>";
+}
+function drawTrace(el) {
+  const width = el.clientWidth, height = 200, left = 30, right = 8, top = 6, bottom = 22;
+  const all = TRACE.flat(), lo = Math.floor(Math.min(...all)), hi = Math.ceil(Math.max(...all));
+  const n = TRACE[0].length, x = (i) => left + (i / (n - 1)) * (width - left - right), y = (v) => top + ((hi - v) / (hi - lo)) * (height - top - bottom);
+  const textC = css("--muted-foreground"), grid = css("--border");
+  let s = `<svg width="${width}" height="${height}" role="img" aria-label="Traço de quatro cadeias para o peso escolhido">`;
+  for (let t = lo; t <= hi; t++) s += `<line x1="${left}" x2="${width - right}" y1="${y(t)}" y2="${y(t)}" stroke="${grid}"/><text x="${left - 6}" y="${y(t) + 4}" text-anchor="end" font-size="12" fill="${textC}">${t < 0 ? "−" + -t : t}</text>`;
+  s += `<text x="${width - right}" y="${height - 6}" text-anchor="end" font-size="12" fill="${textC}">250 pontos guardados</text>`;
+  TRACE.forEach((chain, c) => { s += `<polyline fill="none" stroke="${css(`--chart-${c + 1}`)}" stroke-width="1.25" stroke-linejoin="round" opacity="0.85" points="${chain.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}"><title>Cadeia ${c + 1}</title></polyline>`; });
+  el.innerHTML = s + "</svg>";
+}
+function afterRender() {
+  const paint = () => {
+    ["weights", "trace"].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = ""; });
+    const w = document.getElementById("weights"); if (w) drawWeights(w);
+    const t = document.getElementById("trace"); if (t) drawTrace(t);
+  };
+  paint();
+  addEventListener("resize", paint);
+  addEventListener("load", paint);
+  setTimeout(paint, 400);
+  if (document.fonts) document.fonts.ready.then(paint);
+}
+const STATES = [
+  { id: "normal", label: "Normal", note: "É a tela que conversa com a banca. Cada diagnóstico tem uma frase para leigos." },
+  { id: "alert", label: "Diagnósticos fora da faixa", note: "ok = false: alerta com ícone e texto, sem bloquear nada." },
+  { id: "no-pairs", label: "Sem escolhas", note: "Sessão com 0 pares: só os pesos do perfil, sem traço." },
+  { id: "loading", label: "Carregando", note: "GET /posterior em andamento." },
+  { id: "error", label: "Erro", note: "GET /posterior falhou." },
+];
+
+
+function renderGallery() {
+  const q = (s) => `?state=${s.id}&theme=${theme}`;
+  const frame = (s, width, height, name) => `
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium text-muted-foreground">${name}</span>
+      <div class="overflow-hidden rounded-lg border-2 bg-card">
+        <iframe title="${s.id} ${name}" loading="lazy" data-w="${width}" data-frame="${s.id}-${width}"
+          src="${q(s)}&frame=${s.id}-${width}" style="width:${width}px;height:${height}px;border:0;transform-origin:0 0;display:block"></iframe>
+      </div>
+    </div>`;
+  document.getElementById("root").innerHTML = `
+    <div class="min-h-dvh bg-muted p-6">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">M6 · Painel do modelo <span class="font-normal text-muted-foreground">versão 1</span></h1>
+          <p class="text-sm text-muted-foreground">Rota /modelo. Pesos calculados com o catálogo real, em uma aproximação da posteriori; diagnósticos ilustrativos até a A05. Especificação em m6-modelo.md.</p>
+        </div>
+        <a class="rounded-md border bg-card px-3 py-2 text-sm font-medium" href="?theme=${theme === "dark" ? "light" : "dark"}">Ver no tema ${theme === "dark" ? "claro" : "escuro"}</a>
+      </header>
+      <div class="flex flex-col gap-10">
+        ${STATES.map((s) => `
+          <section>
+            <h2 class="text-lg font-semibold">${s.label}</h2>
+            <p class="mb-2 text-sm text-muted-foreground">${s.note} <a class="underline" target="_blank" href="${q(s)}">Abrir em tamanho real</a></p>
+            <div class="flex items-start gap-6">
+              ${frame(s, 375, 667, "Celular · 375 px")}
+              ${frame(s, 1280, 800, "Notebook · 1280 px")}
+            </div>
+          </section>`).join("")}
+      </div>
+    </div>`;
+  const fit = () => {
+    const available = document.getElementById("root").clientWidth - 48 - 375 - 24 - 8;
+    const scale = Math.min(1, Math.max(0.4, available / 1280));
+    document.querySelectorAll("iframe[data-w='1280']").forEach((f) => {
+      f.style.transform = `scale(${scale})`;
+      const box = f.parentElement;
+      box.style.width = `${1280 * scale + 4}px`;
+      box.style.height = `${parseFloat(f.style.height) * scale + 4}px`;
+    });
+  };
+  addEventListener("resize", fit);
+  addEventListener("message", (e) => {
+    const f = document.querySelector(`iframe[data-frame="${e.data?.frame}"]`);
+    if (f && e.data.height > parseFloat(f.style.height)) { f.style.height = `${e.data.height}px`; fit(); }
+  });
+  fit();
+}
+
+if (stateId) {
+  document.getElementById("root").innerHTML = (SCREENS[stateId] || SCREENS[STATES[0].id])();
+  if (typeof afterRender === "function") afterRender(stateId);
+} else {
+  renderGallery();
+}
+if (window.lucide) lucide.createIcons();
+if (stateId && parent !== window) {
+  const frame = params.get("frame");
+  const send = () => parent.postMessage({ frame, height: document.documentElement.scrollHeight }, "*");
+  addEventListener("load", send);
+  new ResizeObserver(send).observe(document.body);
+}
+</script>
+</body>
+</html>

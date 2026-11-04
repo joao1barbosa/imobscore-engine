@@ -27,6 +27,7 @@ O componente de M4 é o mesmo nas duas rotas. Quem o usa passa `sessionId` e `on
 ## Componentes
 | Componente | Arquivo a criar | Props (nome: tipo) | Componentes shadcn usados |
 | --- | --- | --- | --- |
+| `PageHeader` | `src/features/compare/page-header.tsx` | `active?: "feed" \| "model" \| "experiment"` | `Badge`; sem `active`, só marca e selo; com `active`, também a navegação de M5, M6 e M7 |
 | `ComparePanel` | `src/features/compare/compare-panel.tsx` | `sessionId: string`, `onDone: () => void` | `Progress`, `Skeleton`, `Button`, `Sonner` |
 | `ListingChoiceCard` | `src/features/compare/listing-choice-card.tsx` | `listing: ListingCard`, `shortcut: "←" \| "→"`, `disabled: boolean`, `state: "idle" \| "chosen" \| "dimmed"`, `onChoose: () => void` | Nenhum: é um `<button>` com as classes do mockup |
 | `CompareSkeleton` | `src/features/compare/compare-skeleton.tsx` | nenhuma | `Skeleton` |

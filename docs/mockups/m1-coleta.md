@@ -8,7 +8,7 @@ Levar um colega do link ao fim dos 25 pares, sabendo do que se trata, com consen
 
 Uma única rota com quatro etapas, nesta ordem: tela inicial, formulário, pares (componente de M4, ver `m4-comparar.md`) e agradecimento.
 
-**Comum:** o mesmo cabeçalho de M4. Coluna única de `max-w-2xl`, centralizada.
+**Comum:** o mesmo cabeçalho de M4 (`PageHeader`, sem `active`). Coluna única de `max-w-2xl`, centralizada.
 
 **Tela inicial:** título, frase de abertura, três cartões ("O que você vai fazer", "Como usamos suas respostas" e "Nenhum dado pessoal"), cada um com ícone à esquerda, e o botão "Quero participar".
 
