@@ -13,5 +13,23 @@ services:
       interval: 3s
       retries: 20
     ports: ["5432:5432"]          # usado por make dev e pelos testes
+  api:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://imobscore:imobscore@db:5432/imobscore
+    volumes:
+      - ./data:/app/data            # pares exportados e resultados ficam no repositório
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 5s
+      retries: 20
+  web:
+    build: ./frontend
+    ports: ["8080:80"]
+    depends_on:
+      api: { condition: service_healthy }
 volumes:
   pgdata:
