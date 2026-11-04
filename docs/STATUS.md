@@ -8,6 +8,7 @@ Ambos os agentes acrescentam linhas; ninguém apaga (seção 1.3 de `docs/PLAN.m
 
 - E01 · 2026-11-03 · `make help` lista os 13 alvos; `docs/PLAN.md` idêntico ao arquivo fornecido (sha256); pastas da seção 3 criadas. PR aguardando a aprovação de João, ver Q1.
 - E02 · 2026-11-04 · `docker compose up -d db` → `imobscore-engine-db-1` `Up (healthy)`, `0.0.0.0:5432->5432/tcp`; `docker compose exec db psql -U imobscore -d imobscore_test -c "select 1"` → 1 linha, exit 0. `docker/initdb/01-test-db.sql` criou `imobscore_test` (owner `imobscore`) na inicialização. Container e volume `imobscore-engine_pgdata` deixados no ar.
+- E03 · 2026-11-04 · `cd backend && uv run pytest -q` → 1 passed; `uv run ruff check .` → All checks passed!; `uv run ruff format --check .` → 11 files already formatted; `GET /api/v1/health` → HTTP 200 `{"status":"ok","db":"ok"}` (uvicorn local), CORS libera `http://localhost:5173`, OpenAPI com título `ImobScore`. `uv` baixou o CPython 3.12.16 (`requires-python = ">=3.12,<3.13"`). Aviso do Starlette: `httpx` está deprecado em favor de `httpx2`, mas o plano só permite `httpx`.
 
 ## Correções pendentes (FIX-n)
 
