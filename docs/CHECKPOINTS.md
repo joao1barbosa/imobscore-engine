@@ -1,6 +1,6 @@
 # Checkpoints de entendimento
 
-Protocolo na seção 1.4 de `docs/PLAN.md`. Cada registro traz data, módulo, perguntas, resumo das respostas, dúvidas respondidas e a linha "Entendido: sim". Só João pode declarar "entendido".
+Protocolo na seção 1.4 de `docs/PLAN.md`. Cada registro traz data, módulo, perguntas, resumo das respostas, dúvidas respondidas e a linha "Entendido: sim". Só João pode declarar "entendido". As seções do guia citadas no protocolo estão em `docs/GUIDE.md`.
 
 ## CP1 · Características e catálogo (A02) · qua 04/11
 

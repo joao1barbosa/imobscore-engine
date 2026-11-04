@@ -13,3 +13,7 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-03 · E01 · `docker-compose.yml`, `docs/results.md`, `docs/demo-script.md` e os arquivos de código da seção 3 não foram criados · a E01 cria só as pastas; esses arquivos pertencem a E02, A08, A09 e às demais tarefas.
 - 2026-11-03 · E01 · O remoto estava vazio, então `main` recebeu um commit raiz vazio antes da branch da E01 · um PR precisa de uma branch de destino com histórico comum.
 - 2026-11-03 · E01 · `CLAUDE.md` e `AGENTS.md` ficam como dois arquivos separados, sem symlink · decisão de João (Q1), seguindo o plano.
+- 2026-11-03 · E01 · O guia de estudo foi copiado para `docs/GUIDE.md` e entra na lista "Nunca edite" do executor, junto com `docs/tasks/` · decisão de João (Q2); o arquivo de tarefa virou a fonte do executor, que não deve alterá-lo.
+- 2026-11-03 · E01 · `docs/PLAN.md` difere do arquivo fornecido em uma palavra: "4 cadeias" virou "16 cadeias" na seção 5.4 · decisão de João (Q5).
+- 2026-11-03 · E01 · `AGENTS.md` deixa de ser o texto exato da E01: o arquivo da tarefa é lido primeiro e é o que vale · decisão de João (Q6), para não carregar o plano inteiro a cada tarefa.
+- 2026-11-03 · E01 · As tarefas E reproduzem os trechos do plano de que precisam; as tarefas A não, porque o `CLAUDE.md` manda ler o plano inteiro · o pedido de João (Q6) trata do executor.

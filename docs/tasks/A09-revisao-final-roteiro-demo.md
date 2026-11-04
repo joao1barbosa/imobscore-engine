@@ -25,3 +25,7 @@ E15
 ## Verificação
 
 Roteiro manual offline da seção 9, com João, sem comando automatizado.
+
+## Atenção
+
+O guia citado nesta tarefa está em `docs/GUIDE.md`.

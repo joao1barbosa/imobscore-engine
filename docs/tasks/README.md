@@ -3,8 +3,13 @@
 Tarefas das seções 8.2 e 8.3 de `docs/PLAN.md`, em ordem cronológica, conforme a visão por dia da seção 8.1.
 São A01 a A09, as revisões A-REV1 e A-REV2 e E01 a E17.
 
-`docs/PLAN.md` é a fonte da verdade: cada arquivo reproduz o texto da tarefa, e em caso de divergência vale o plano.
-O objetivo das tarefas e os itens marcados como derivados foram escritos a partir do plano, que não os traz em campo próprio.
+**Executor (E):** o arquivo da tarefa é autocontido e é o que vale, para que não seja preciso carregar o plano inteiro a cada tarefa. O plano só é consultado se faltar algo, lendo apenas a seção necessária.
+
+**Arquiteto (A):** os arquivos das tarefas A são um atalho para o texto da seção 8.2. O `CLAUDE.md` manda ler o plano inteiro, e em caso de divergência vale o plano.
+
+Os arquivos reproduzem o texto do plano. O objetivo das tarefas e os itens marcados como derivados foram escritos a partir dele, que não os traz em campo próprio.
+
+**Manutenção:** como o executor lê a cópia, toda mudança de especificação em `docs/PLAN.md` precisa ser levada, na mesma alteração, às tarefas E que reproduzem o trecho.
 
 | ID | Título | Responsável | Dependências | Prazo |
 | --- | --- | --- | --- | --- |
@@ -42,3 +47,15 @@ O objetivo das tarefas e os itens marcados como derivados foram escritos a parti
 - Executor: seção 1.5 do plano e `AGENTS.md`. Arquiteto: seção 1.4 do plano e `CLAUDE.md`.
 - Ao fim de cada tarefa, o dono atualiza `docs/STATUS.md` (seção 1.8).
 - `make check` é a porta de qualidade única (seção 9).
+
+## Pedido padrão para o executor
+
+João cola no OpenCode, trocando `{ID}`:
+
+```text
+Você é o executor (papel E) do projeto ImobScore.
+1. Leia AGENTS.md, docs/STATUS.md e o arquivo da tarefa em docs/tasks/{ID}-*.md. Esse arquivo é autocontido e é o que vale; só consulte docs/PLAN.md se faltar algo, lendo apenas a seção necessária.
+2. Implemente somente a tarefa {ID}, editando apenas os "Arquivos permitidos".
+3. Se algo não estiver especificado, não invente: escreva a pergunta em docs/STATUS.md ("Perguntas abertas") e pare.
+4. Ao terminar, rode todos os comandos de "Verificação" da tarefa, cole o resumo da saída em docs/STATUS.md e faça um commit "tipo(escopo): {ID} título".
+```

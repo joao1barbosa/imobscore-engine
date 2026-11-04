@@ -2,7 +2,7 @@
 
 - **Responsável:** E · Executor (OpenCode Go)
 - **Prazo:** qua 04/11
-- **Fonte:** `docs/PLAN.md`, seção 8.3. Em caso de divergência, vale o plano.
+- **Fonte:** este arquivo é autocontido e é o que vale. Consulte `docs/PLAN.md` (seção 8.3) só se faltar algo aqui, lendo apenas a seção necessária.
 
 ## Objetivo
 
@@ -90,3 +90,7 @@ reset:    ## apaga o banco (pede confirmação)
 ## Verificação
 
 `make help` lista os 13 alvos; `git status` limpo depois do commit.
+
+## Atenção
+
+Tarefa concluída. Depois dela, João mudou o `AGENTS.md` (Q6), então vale o arquivo atual, e não o bloco acima. A correção de 2026-11-03 também alterou uma palavra de `docs/PLAN.md` (Q5).

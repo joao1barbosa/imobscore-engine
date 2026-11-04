@@ -687,7 +687,7 @@ Cada persona também tem `demo_defaults` para o modo demo: Família = Goiânia, 
 
 ### 5.4 Metropolis-Hastings (`mcmc.py`)
 
-Passeio aleatório gaussiano com as 4 cadeias avançando juntas. A adaptação do passo acontece só no aquecimento. Depois dele o passo fica fixo, o que mantém a cadeia válida.
+Passeio aleatório gaussiano com as 16 cadeias avançando juntas. A adaptação do passo acontece só no aquecimento. Depois dele o passo fica fixo, o que mantém a cadeia válida.
 
 | Parâmetro | Valor padrão | Variável de ambiente |
 | --- | --- | --- |

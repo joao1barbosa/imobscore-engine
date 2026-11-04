@@ -25,3 +25,7 @@ coleta encerrada, A07
 ## Verificação
 
 `make evaluate`. Se houver menos de 5 participantes com pelo menos 35 pares, rodar também `make simulate` e o `evaluate` sobre os dados simulados.
+
+## Atenção
+
+O guia citado nesta tarefa está em `docs/GUIDE.md`.

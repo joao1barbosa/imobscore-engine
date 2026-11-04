@@ -15,5 +15,6 @@ App web que recomenda imóveis a partir de escolhas entre pares ("qual você pre
 ## Documentação
 
 - [Plano de implementação](docs/PLAN.md)
+- [Bases matemáticas e guia de estudo](docs/GUIDE.md)
 - [Índice de tarefas](docs/tasks/README.md)
 - [Andamento](docs/STATUS.md)
