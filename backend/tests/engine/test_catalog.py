@@ -56,8 +56,7 @@ def test_values_respect_the_database_checks(catalog: list[ListingRow]) -> None:
         assert row.price_brl > 0
         assert row.area_m2 > 0
         assert 1 <= row.bedrooms <= 6
-        assert 1 <= row.bathrooms <= row.bedrooms + 1 <= 7
-        assert 1 <= row.bathrooms <= 6
+        assert 1 <= row.bathrooms <= max(1, min(row.bedrooms, int(row.area_m2 // 25)))
         assert 0 <= row.parking <= 4
         assert row.dist_center_km >= 0.3
         assert 0 <= row.age_years <= 40
