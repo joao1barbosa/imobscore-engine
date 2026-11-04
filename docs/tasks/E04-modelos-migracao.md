@@ -74,13 +74,13 @@ São 8 tabelas, criadas por uma única migração inicial do Alembic. O DDL abai
 ```sql
 CREATE TABLE listings (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code            text UNIQUE NOT NULL,              -- ex.: GYN-A-0042
-  city            text NOT NULL,                     -- 'Goiânia' | 'Aparecida de Goiânia' | 'Anápolis'
+  code            text UNIQUE NOT NULL,              -- ex.: GYN-V-0042
+  city            text NOT NULL,                     -- só 'Goiânia' no MVP
   purpose         text NOT NULL CHECK (purpose IN ('sale','rent')),
   kind            text NOT NULL CHECK (kind IN ('apartment','house')),
   title           text NOT NULL,
   neighborhood    text NOT NULL,
-  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- venda: preço; aluguel: aluguel + condomínio
+  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- só venda no MVP
   area_m2         numeric(7,1)  NOT NULL CHECK (area_m2 > 0),
   bedrooms        smallint NOT NULL CHECK (bedrooms BETWEEN 1 AND 6),
   bathrooms       smallint NOT NULL CHECK (bathrooms BETWEEN 1 AND 6),

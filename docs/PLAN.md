@@ -13,7 +13,7 @@ Este documento é autocontido. Nenhum agente deve precisar de informação que n
 Um app web que recomenda imóveis a partir de escolhas entre pares ("qual você prefere?"). Ele roda inteiro no notebook com Docker Compose, sem internet. São cinco fluxos:
 
 1. **Coleta (`/coleta`):** um colega lê uma tela inicial sobre o experimento, aceita o consentimento, informa a faixa de preço, escolhe uma persona e responde a 25 pares aleatórios de imóveis à venda em Goiânia. O servidor gera o código do participante, e nenhum dado pessoal é coletado. Os dados servem ao experimento.
-2. **Onboarding (`/comecar`) e modo demo (`/demo`):** cidade, compra ou aluguel, faixa de preço e persona (Família, Investidor ou Estudante). No modo demo, um toque na persona preenche o resto.
+2. **Onboarding (`/comecar`) e modo demo (`/demo`):** faixa de preço e persona (Família, Investidor ou Estudante), sempre para imóveis à venda em Goiânia. No modo demo, um toque na persona preenche o resto.
 3. **Comparações (`/comparar`):** 3 pares na demo, escolhidos pelo motor.
 4. **Feed (`/feed`):** o catálogo ordenado por uma nota de afinidade de 0 a 100, com intervalo de incerteza e a alternância Antes e Depois.
 5. **Painéis (`/modelo` e `/experimento`):** pesos aprendidos, incerteza e diagnósticos do MCMC, e a acurácia de cada método em pares reais.
@@ -472,13 +472,13 @@ São 8 tabelas, criadas por uma única migração inicial do Alembic. O DDL abai
 ```sql
 CREATE TABLE listings (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code            text UNIQUE NOT NULL,              -- ex.: GYN-A-0042
-  city            text NOT NULL,                     -- 'Goiânia' | 'Aparecida de Goiânia' | 'Anápolis'
+  code            text UNIQUE NOT NULL,              -- ex.: GYN-V-0042
+  city            text NOT NULL,                     -- só 'Goiânia' no MVP
   purpose         text NOT NULL CHECK (purpose IN ('sale','rent')),
   kind            text NOT NULL CHECK (kind IN ('apartment','house')),
   title           text NOT NULL,
   neighborhood    text NOT NULL,
-  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- venda: preço; aluguel: aluguel + condomínio
+  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- só venda no MVP
   area_m2         numeric(7,1)  NOT NULL CHECK (area_m2 > 0),
   bedrooms        smallint NOT NULL CHECK (bedrooms BETWEEN 1 AND 6),
   bathrooms       smallint NOT NULL CHECK (bathrooms BETWEEN 1 AND 6),
@@ -681,7 +681,7 @@ Cada persona define a média μ da priori, na escala padronizada (efeito de uma 
 | `pet` | 0,3 | 0,0 | 0,2 |
 | `doorman` | 0,4 | 0,4 | 0,1 |
 
-Cada persona também tem `demo_defaults` para o modo demo: Família = Goiânia, compra, R$ 350 mil a R$ 900 mil; Investidor = Goiânia, compra, R$ 200 mil a R$ 600 mil; Estudante = Goiânia, aluguel, R$ 900 a R$ 2.500 por mês.
+Cada persona também tem `demo_defaults` para o modo demo: Família = Goiânia, compra, R$ 350 mil a R$ 900 mil; Investidor = Goiânia, compra, R$ 200 mil a R$ 600 mil; Estudante = Goiânia, compra, R$ 150 mil a R$ 350 mil.
 
 ### 5.4 Metropolis-Hastings (`mcmc.py`)
 
@@ -912,7 +912,7 @@ class SessionCreate(BaseModel):
     price_max: Decimal = Field(gt=0)
     persona_slug: Literal["familia", "investidor", "estudante"]
     consent: bool = False
-    # model_validator: price_min < price_max; collection exige consent=True, city="Goiânia" e purpose="sale"; o servidor gera participant_code
+    # model_validator: price_min < price_max; city="Goiânia" e purpose="sale" em todos os modos; collection exige consent=True; o servidor gera participant_code
 
 class SessionOut(BaseModel):
     id: UUID; mode: str; city: str; purpose: str
@@ -987,7 +987,7 @@ São 7 rotas no MVP, mais uma condicional. O fluxo principal é onboarding → c
 | --- | --- | --- | --- | --- |
 | `/coleta` | Coleta | M1 + M4 | Tela inicial, consentimento, faixa de preço (Goiânia, compra), persona, 25 pares e agradecimento; o servidor gera o código do participante | E08 (primeira a ficar pronta) |
 | `/` | Início | M2 | Frase "Pare de filtrar. Comece a escolher.", botão Começar e botão Modo demo | E11 |
-| `/comecar` | Onboarding | M3 | Passo 1: cidade, finalidade, faixa de preço. Passo 2: cartões das 3 personas | E11 |
+| `/comecar` | Onboarding | M3 | Passo 1: faixa de preço (Goiânia, compra). Passo 2: cartões das 3 personas | E11 |
 | `/demo` | Modo demo | M3b | 3 cartões de persona; um toque cria a sessão `demo` com `demo_defaults` e vai para `/comparar` | E11 |
 | `/comparar` | Comparações | M4 | Dois cartões lado a lado (empilhados no celular), barra de progresso, atalhos ← e → | E12 |
 | `/feed` | Feed | M5 | Lista de até 30 imóveis com selo de score, intervalo e até 4 motivos \[C2\]; alternância Antes e Depois | E12 |
@@ -997,19 +997,16 @@ São 7 rotas no MVP, mais uma condicional. O fluxo principal é onboarding → c
 
 ### Comportamento de cada tela
 
-**Onboarding (`features/onboarding`).** Um formulário do React Hook Form em dois passos, com um schema Zod por passo. A faixa de preço é um `Slider` de duas alças com campos numéricos sincronizados. Os limites vêm de `GET /meta/options`, conforme a cidade e a finalidade escolhidas, e mudam o passo do slider (R$ 10 mil na compra, R$ 100 no aluguel). Ao enviar, chama `POST /sessions`, guarda o `sessionId` no Zustand e navega para `/comparar`.
+**Onboarding (`features/onboarding`).** Um formulário do React Hook Form em dois passos, com um schema Zod por passo. A faixa de preço é um `Slider` de duas alças com campos numéricos sincronizados. Os limites vêm do único segmento de `GET /meta/options`, e o slider anda em passos de R$ 10 mil. Ao enviar, chama `POST /sessions`, guarda o `sessionId` no Zustand e navega para `/comparar`.
 
 ```ts
-export const step1Schema = (opts: MetaOptions) =>
+export const step1Schema = (seg: Segment) =>
   z.object({
-    city: z.string().min(1, "Escolha a cidade"),
-    purpose: z.enum(["sale", "rent"]),
     priceMin: z.number().positive(),
     priceMax: z.number().positive(),
   }).superRefine((v, ctx) => {
     if (v.priceMin >= v.priceMax) ctx.addIssue({ code: "custom", path: ["priceMax"], message: "O máximo precisa ser maior que o mínimo" });
-    const seg = opts.segments.find(s => s.city === v.city && s.purpose === v.purpose);
-    if (seg && v.priceMax < seg.price_floor) ctx.addIssue({ code: "custom", path: ["priceMax"], message: "Nenhum imóvel nessa faixa" });
+    if (v.priceMax < seg.price_floor) ctx.addIssue({ code: "custom", path: ["priceMax"], message: "Nenhum imóvel nessa faixa" });
   });
 export const step2Schema = z.object({ personaSlug: z.enum(["familia", "investidor", "estudante"]) });
 export const collectionSchema = z.object({
@@ -1040,7 +1037,7 @@ export const collectionSchema = z.object({
 - Componentes do shadcn/ui, sobre Base UI: `Button`, `Card`, `Badge`, `Progress`, `Slider`, `Select`, `RadioGroup`, `Tabs`, `Tooltip`, `Switch`, `Skeleton`, `Sonner` (avisos).
 - Fonte Geist instalada via `@fontsource-variable/geist`, para funcionar offline. Nada de Google Fonts.
 - Cores como variáveis CSS do tema do shadcn, com modo escuro. O selo de score tem três faixas (0 a 39, 40 a 69, 70 a 100) e sempre mostra o número, para não depender só da cor.
-- Valores com `Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })`. Aluguel sempre com "/mês".
+- Valores com `Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })`.
 - Contraste AA, foco visível, `aria-live="polite"` na barra de progresso e textos alternativos nas ilustrações.
 - Estados de carregamento com `Skeleton`, e erros com aviso e botão "Tentar de novo". Um `ErrorBoundary` na raiz mostra uma tela de erro amigável.
 
@@ -1083,22 +1080,21 @@ Claude constrói o motor e desenha as telas; o executor implementa o resto em pa
 - [ ] **A02 · Características, catálogo simulado e personas** · qua 04/11 · depende de: E03
   - **Arquivos:** `backend/app/engine/features.py`; `backend/app/seed/__init__.py`; `backend/app/seed/catalog.py`; `backend/app/seed/personas.yaml`; `backend/app/seed/inspection_items.yaml`; `backend/tests/engine/test_features.py`; `backend/tests/engine/test_catalog.py`.
   - **Especificação:** seções 5.1, 5.3 e 5.10, mais as regras do catálogo a seguir.
-  - **Catálogo:** `generate_catalog(seed: int) -> list[ListingRow]`, em que `ListingRow` é uma dataclass imutável com os campos da tabela `listings` (seção 4), exceto `id` e `created_at`. São 300 imóveis: 3 cidades × 2 finalidades × 50. Tudo vem de `rng = np.random.default_rng(seed)`, nesta ordem fixa de geração: cidade, finalidade, índice.
-    - `code`: `{GYN|APG|ANP}-{V|A}-{0001..0050}` (Goiânia, Aparecida de Goiânia, Anápolis; V = venda, A = aluguel).
-    - Bairros de Goiânia, com distância ao centro: Setor Central 1 km, Setor Oeste 2, Setor Universitário 2, Setor Marista 3, Setor Bueno 4, Jardim Goiás 5, Setor Pedro Ludovico 5, Jardim América 6, Parque Amazônia 8. Nas outras duas cidades, uma lista fixa de nomes genéricos: Residencial Primavera 3, Jardim das Flores 4, Parque Alvorada 6, Vila Nova 2, Jardim Bela Vista 8, Residencial Ipê 12. `dist_center_km` = distância do bairro + U(−0,5; 0,5), no mínimo 0,3.
+  - **Catálogo:** `generate_catalog(seed: int) -> list[ListingRow]`, em que `ListingRow` é uma dataclass imutável com os campos da tabela `listings` (seção 4), exceto `id` e `created_at`. São 300 imóveis, todos em Goiânia e à venda (decisão de João em 04/11). Tudo vem de `rng = np.random.default_rng(seed)`, gerados em ordem de índice.
+    - `code`: `GYN-V-{0001..0300}`.
+    - Bairros, com distância ao centro: Setor Central 1 km, Setor Oeste 2, Setor Universitário 2, Setor Marista 3, Setor Bueno 4, Jardim Goiás 5, Setor Pedro Ludovico 5, Jardim América 6, Parque Amazônia 8. `dist_center_km` = distância do bairro + U(−0,5; 0,5), no mínimo 0,3.
     - `kind`: casa com probabilidade 0,35.
     - `bedrooms`: apartamento sorteado em \[1, 2, 3, 4\] com probabilidades \[0,15; 0,40; 0,35; 0,10\]; casa em \[2, 3, 4, 5\] com \[0,15; 0,40; 0,30; 0,15\].
     - `area_m2` = exp(N(ln(28 + 22 × quartos) + 0,15 se casa; 0,18)), com uma casa decimal.
     - `bathrooms`: inteiro de 1 a quartos + 1. `parking` = arredondar(área / 45 + N(0; 0,6)), limitado a \[0, 4\]. `age_years`: inteiro de 0 a 40.
     - `leisure_count`: apartamento em \[0, 1, 2, 3\] com \[0,2; 0,3; 0,3; 0,2\]; casa com \[0,6; 0,3; 0,1; 0\].
     - `doorman_24h`: 0,70 em apartamentos e 0,10 em casas. `pet_friendly`: 0,60.
-    - Preço de venda: exp(8,5 + 1,0 × ln(área) + 0,08 × vagas − 0,03 × distância − 0,006 × idade + 0,05 × lazer + 0,04 × portaria + fator da cidade + N(0; 0,12)), arredondado para R$ 1.000. Fator: Goiânia 0; Aparecida −0,12; Anápolis −0,18.
-    - Aluguel (`purpose = rent`): preço de venda × 0,0045 × N(1; 0,08), arredondado para R$ 10. `price_brl` guarda o aluguel.
-    - Claude só pode ajustar o intercepto (8,5) e os fatores das cidades, para que pelo menos 95% das vendas fiquem entre R$ 150 mil e R$ 2,5 milhões e 95% dos aluguéis entre R$ 700 e R$ 9.000. Os valores finais vão para `docs/decisions.md`.
+    - Preço de venda: exp(8,5 + 1,0 × ln(área) + 0,08 × vagas − 0,03 × distância − 0,006 × idade + 0,05 × lazer + 0,04 × portaria + N(0; 0,12)), arredondado para R$ 1.000.
+    - Claude só pode ajustar o intercepto (8,5), para que pelo menos 95% dos preços fiquem entre R$ 150 mil e R$ 2,5 milhões. Os valores finais vão para `docs/decisions.md`.
     - `title`: "Apartamento de 3 quartos no Setor Bueno" ou "Casa de 1 quarto no ..." (singular com 1). `illustration`: `apartment-1` a `apartment-3` ou `house-1` a `house-3`.
   - **`personas.yaml`:** lista com `slug`, `name`, `description` (1 frase), `prior_mean` (as 12 chaves da tabela 5.3), `prior_sd` (12 chaves, todas 1,0) e `demo_defaults` (`city`, `purpose`, `price_min`, `price_max`, com os valores da seção 5.3).
   - **`inspection_items.yaml`:** lista com `key`, `label` e `delta`: `noisy_street` Rua barulhenta −10; `humidity` Umidade ou mofo −8; `needs_renovation` Precisa de reforma −7; `low_light` Pouca luz natural −5; `good_light` Boa iluminação +5; `quiet_neighborhood` Vizinhança tranquila +6; `walkable_shops` Comércio a pé +5; `nice_view` Vista bonita +4.
-  - **Testes:** a mesma semente gera o mesmo catálogo; 50 imóveis por segmento; códigos únicos; faixas de preço (95%); `bathrooms ≤ bedrooms + 1`; a mediana vira 0 depois de `standardize`; IQR zero cai para o desvio padrão e depois para 1; `bedrooms_sq` vale 0 para 3 quartos antes da padronização; `raw_matrix` devolve (n, 12).
+  - **Testes:** a mesma semente gera o mesmo catálogo; 300 imóveis, todos em Goiânia e à venda; códigos únicos; faixas de preço (95%); `bathrooms ≤ bedrooms + 1`; a mediana vira 0 depois de `standardize`; IQR zero cai para o desvio padrão e depois para 1; `bedrooms_sq` vale 0 para 3 quartos antes da padronização; `raw_matrix` devolve (n, 12).
   - **Verificação:** `cd backend && uv run pytest tests/engine -q && uv run mypy app/engine`.
   - **Checkpoint:** CP1.
 - [ ] **A03 · Modelo e pares aleatórios** · qua 04/11 · depende de: A02
@@ -1253,18 +1249,18 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
     4. Inserir `generate_catalog(settings.CATALOG_SEED)` em `listings` e as personas de `app/seed/personas.yaml` em `personas`.
     5. Para cada (cidade, finalidade): `T = raw_matrix(listings do segmento)`, `center, scale = fit_stats(T)` e uma linha em `feature_stats` por chave de `FEATURE_KEYS`.
     6. Com `--with-results` e `data/results/results.csv` existente: carregar esse CSV como em `load-results` (E10).
-  - **Verificação:** `pytest tests/services/test_seed.py` confere 300 imóveis, 3 personas e 72 linhas de `feature_stats`; rodar duas vezes gera os mesmos códigos e preços.
+  - **Verificação:** `pytest tests/services/test_seed.py` confere 300 imóveis, 3 personas e 12 linhas de `feature_stats`; rodar duas vezes gera os mesmos códigos e preços.
 - [ ] **E07 · API da coleta** · qui 05/11, manhã · depende de: A03, E06
   - **Arquivos:** `backend/app/schemas/__init__.py`, `meta.py`, `session.py`, `listing.py`, `pair.py`; `backend/app/services/listing_service.py` (`candidate_listings`), `session_service.py`, `pair_service.py`; `backend/app/api/v1/__init__.py` (registrar as rotas novas), `meta.py`, `sessions.py`; `backend/app/deps.py` (acrescentar `get_session_or_404`, que levanta `ApiError` 404 `session_not_found`); `backend/tests/api/test_meta.py`, `test_sessions.py`, `test_pairs_collection.py`.
   - **Rotas:** `GET /meta/options`, `GET /meta/personas`, `POST /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/next-pair`, `POST /sessions/{id}/comparisons/{position}`, com os schemas e as regras da seção 6.
   - **`MetaOptions`:** `{ segments: [{ city, purpose, price_floor, price_ceiling }] }`, com o menor e o maior preço de cada segmento.
-  - **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Na coleta, exige `consent = true`, `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`) e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
+  - **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Em todos os modos, exige `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`). Na coleta, também exige `consent = true` e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
   - **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 25 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
   - **Modos `demo` e `product`:** `POST /sessions` já funciona, mas `GET /next-pair` devolve `501 not_available` até a E10.
-  - **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 na coleta fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
+  - **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
   - **Verificação:** `cd backend && uv run pytest -q tests/api`.
 - [ ] **E08 · Telas da coleta** · qui 05/11 · depende de: E05, E07, M1 e M4 aprovados
-  - **Arquivos:** `frontend/src/api/schema.d.ts` (gerado com `pnpm gen:api`), `src/api/client.ts` (`createClient<paths>({ baseUrl: "/api/v1" })`), `src/api/queries.ts`; `src/lib/format.ts` (`formatBRL`, `formatArea`, `formatDistance` ("2,3 km"), `formatRent` com "/mês", via `Intl.NumberFormat("pt-BR")`); `src/features/collection/*` e `src/features/compare/*`, com os componentes e arquivos listados em `m1-coleta.md` e `m4-comparar.md`; `src/mocks/handlers.ts`; os testes desses componentes; `src/app/router.tsx` (só trocar o placeholder de `/coleta`).
+  - **Arquivos:** `frontend/src/api/schema.d.ts` (gerado com `pnpm gen:api`), `src/api/client.ts` (`createClient<paths>({ baseUrl: "/api/v1" })`), `src/api/queries.ts`; `src/lib/format.ts` (`formatBRL`, `formatArea`, `formatDistance` ("2,3 km"), via `Intl.NumberFormat("pt-BR")`); `src/features/collection/*` e `src/features/compare/*`, com os componentes e arquivos listados em `m1-coleta.md` e `m4-comparar.md`; `src/mocks/handlers.ts`; os testes desses componentes; `src/app/router.tsx` (só trocar o placeholder de `/coleta`).
   - **Comportamento:** o de M1 e M4. Além disso: o tempo de resposta é medido com `performance.now()` desde que o par aparece; as teclas ← e → escolhem; os botões ficam desabilitados enquanto a resposta é enviada; ao receber `done: true`, mostra o agradecimento. O schema do formulário é o `collectionFormSchema` descrito em `m1-coleta.md`.
   - **Testes:** a tela inicial leva ao formulário; sem consentimento não envia; o `POST /sessions` envia Goiânia e `sale`; clique e tecla ← escolhem A; botão desabilitado durante o envio; resposta 204 leva ao agradecimento.
   - **Verificação:** `pnpm test:run && pnpm lint && pnpm typecheck`; e, com `make dev`, João completa 5 pares em uma janela de 375 px.
@@ -1487,7 +1483,7 @@ O plano já assume uma resposta padrão para cada questão, então nada bloqueia
 | Quantas horas por dia João tem para checkpoints e aprovações? | 4 a 5 horas | Menos tempo: CP1 e CP2 viram um só, e CP5 vai para o domingo | qua 04/11, manhã |
 | Qual modelo do OpenCode Go faz o papel de executor? | Qualquer um que João escolher; o plano não depende do modelo | Trocar de modelo se uma tarefa falhar duas vezes | qua 04/11, manhã |
 | Como os colegas acessam a coleta? | Túnel do Cloudflare com o notebook ligado de 05/11, 18h, a 08/11, 12h | Coleta presencial no notebook; deploy mínimo só da coleta | qui 05/11, 12h |
-| Quantos colegas e quantos pares cada um? | Até 10 colegas, 25 pares aleatórios (cerca de 2 minutos), o que limita a curva a n\_train = 15. Decidido por João em 04/11 | — | Decidido |
+| Quantos colegas e quantos pares cada um? | Até 10 colegas, 25 pares aleatórios (cerca de 2 minutos), o que limita a curva a n\_train = 15; catálogo inteiro em Goiânia e à venda. Decidido por João em 04/11 | — | Decidido |
 | As 12 características da seção 5.1 estão certas? | Lista da seção 5.1 | Trocar `is_house` por andar; separar o condomínio do preço | qua 04/11, antes da A02 |
 | Os pesos das personas fazem sentido? | Tabela da seção 5.3 | Ajuste na A-REV2, olhando o feed de cada persona | sáb 07/11 |
 | Formato do relatório para a disciplina | `docs/results.md`, figuras e CSV gerados pela A07 e pela A08 | Confirmar com o professor | sex 06/11 |

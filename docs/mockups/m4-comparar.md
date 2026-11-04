@@ -1,5 +1,5 @@
 # M4 · Comparação de um par
-Rota: /comparar (demo, E12) e dentro de /coleta (E08)   Versão: 2   Status: ver APPROVAL.md
+Rota: /comparar (demo, E12) e dentro de /coleta (E08)   Versão: 3   Status: ver APPROVAL.md
 
 ## Objetivo (1 frase)
 Fazer a pessoa escolher entre dois imóveis em poucos segundos, com tudo o que importa à vista e sem precisar rolar a tela.
@@ -39,7 +39,7 @@ O componente de M4 é o mesmo nas duas rotas. Quem o usa passa `sessionId` e `on
 | --- | --- | --- |
 | `PairOut.position`, `PairOut.total` | Progresso e `value` da barra (`position - 1` de `total`) | `copy.compare.progress(position, total)` |
 | `listing_a`, `listing_b` | Cartões da esquerda e da direita; "A" e "B" em `AnswerIn.chosen` | — |
-| `price_brl` e `purpose` | Preço | `formatBRL` para `sale`; `formatRent` para `rent` |
+| `price_brl` | Preço | `formatBRL` |
 | `title` | Título | Texto da API |
 | `neighborhood`, `city` | Abaixo do título | `copy.compare.listing.location(neighborhood, city)` |
 | `area_m2` | Grade | `formatArea` |
@@ -86,7 +86,7 @@ Com `prefers-reduced-motion`, a troca de par não tem animação. As setas só v
 ## Critérios de aceite visual (lista verificável)
 - [ ] Em 375 × 667 px, os dois cartões cabem sem rolagem no maior par do mockup, sem rolagem horizontal.
 - [ ] Em 1280 px, os cartões ficam lado a lado, com a mesma altura, e a tecla de cada um aparece no canto superior direito.
-- [ ] O preço é o maior texto do cartão, e o aluguel sempre traz "/mês".
+- [ ] O preço é o maior texto do cartão.
 - [ ] O cartão inteiro é um único `<button>`, com `aria-label` de `compare.chooseLabel` e foco visível.
 - [ ] Área, quartos, banheiros, vagas, idade, lazer e distância sempre têm texto, não só ícone.
 - [ ] "Aceita pet" e "Portaria 24 h" aparecem só quando o campo é `true`.

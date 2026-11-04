@@ -21,4 +21,4 @@ Mudanças na interface da seção 5.10 também exigem avisar João e atualizar `
 
 ## Índice
 
-Nenhum ADR registrado ainda.
+- [0001 · O motor usa só atributos estruturados, sem fotos](0001-escopo-atributos-sem-fotos.md)

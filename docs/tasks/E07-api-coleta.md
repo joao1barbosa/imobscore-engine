@@ -20,10 +20,10 @@ A03, E06
 
 - **Rotas:** `GET /meta/options`, `GET /meta/personas`, `POST /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/next-pair`, `POST /sessions/{id}/comparisons/{position}`, com os schemas e as regras da seção 6.
 - **`MetaOptions`:** `{ segments: [{ city, purpose, price_floor, price_ceiling }] }`, com o menor e o maior preço de cada segmento.
-- **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Na coleta, exige `consent = true`, `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`) e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
+- **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Em todos os modos, exige `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`). Na coleta, também exige `consent = true` e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
 - **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 25 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
 - **Modos `demo` e `product`:** `POST /sessions` já funciona, mas `GET /next-pair` devolve `501 not_available` até a E10.
-- **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 na coleta fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
+- **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
 
 ## Verificação
 
@@ -81,7 +81,7 @@ class SessionCreate(BaseModel):
     price_max: Decimal = Field(gt=0)
     persona_slug: Literal["familia", "investidor", "estudante"]
     consent: bool = False
-    # model_validator: price_min < price_max; collection exige consent=True, city="Goiânia" e purpose="sale"; o servidor gera participant_code
+    # model_validator: price_min < price_max; city="Goiânia" e purpose="sale" em todos os modos; collection exige consent=True; o servidor gera participant_code
 
 class SessionOut(BaseModel):
     id: UUID; mode: str; city: str; purpose: str
@@ -153,13 +153,13 @@ class PosteriorOut(BaseModel):
 ```sql
 CREATE TABLE listings (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code            text UNIQUE NOT NULL,              -- ex.: GYN-A-0042
-  city            text NOT NULL,                     -- 'Goiânia' | 'Aparecida de Goiânia' | 'Anápolis'
+  code            text UNIQUE NOT NULL,              -- ex.: GYN-V-0042
+  city            text NOT NULL,                     -- só 'Goiânia' no MVP
   purpose         text NOT NULL CHECK (purpose IN ('sale','rent')),
   kind            text NOT NULL CHECK (kind IN ('apartment','house')),
   title           text NOT NULL,
   neighborhood    text NOT NULL,
-  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- venda: preço; aluguel: aluguel + condomínio
+  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- só venda no MVP
   area_m2         numeric(7,1)  NOT NULL CHECK (area_m2 > 0),
   bedrooms        smallint NOT NULL CHECK (bedrooms BETWEEN 1 AND 6),
   bathrooms       smallint NOT NULL CHECK (bathrooms BETWEEN 1 AND 6),

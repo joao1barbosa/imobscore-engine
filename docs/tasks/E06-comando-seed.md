@@ -28,7 +28,7 @@ A02, E04
 
 ## Verificação
 
-`pytest tests/services/test_seed.py` confere 300 imóveis, 3 personas e 72 linhas de `feature_stats`; rodar duas vezes gera os mesmos códigos e preços.
+`pytest tests/services/test_seed.py` confere 300 imóveis, 3 personas e 12 linhas de `feature_stats`; rodar duas vezes gera os mesmos códigos e preços.
 
 ## Regras gerais
 
@@ -52,13 +52,13 @@ Trechos copiados de `docs/PLAN.md`. Menções a "seção N" se referem ao plano,
 ```sql
 CREATE TABLE listings (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code            text UNIQUE NOT NULL,              -- ex.: GYN-A-0042
-  city            text NOT NULL,                     -- 'Goiânia' | 'Aparecida de Goiânia' | 'Anápolis'
+  code            text UNIQUE NOT NULL,              -- ex.: GYN-V-0042
+  city            text NOT NULL,                     -- só 'Goiânia' no MVP
   purpose         text NOT NULL CHECK (purpose IN ('sale','rent')),
   kind            text NOT NULL CHECK (kind IN ('apartment','house')),
   title           text NOT NULL,
   neighborhood    text NOT NULL,
-  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- venda: preço; aluguel: aluguel + condomínio
+  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- só venda no MVP
   area_m2         numeric(7,1)  NOT NULL CHECK (area_m2 > 0),
   bedrooms        smallint NOT NULL CHECK (bedrooms BETWEEN 1 AND 6),
   bathrooms       smallint NOT NULL CHECK (bathrooms BETWEEN 1 AND 6),
@@ -149,7 +149,7 @@ def standardize(T: np.ndarray, center: np.ndarray, scale: np.ndarray) -> np.ndar
 
 ### Tarefa A02 · O que o arquiteto entrega
 
-- **Catálogo:** `generate_catalog(seed: int) -> list[ListingRow]`, em que `ListingRow` é uma dataclass imutável com os campos da tabela `listings` (seção 4), exceto `id` e `created_at`. São 300 imóveis: 3 cidades × 2 finalidades × 50. Tudo vem de `rng = np.random.default_rng(seed)`, nesta ordem fixa de geração: cidade, finalidade, índice.
+- **Catálogo:** `generate_catalog(seed: int) -> list[ListingRow]`, em que `ListingRow` é uma dataclass imutável com os campos da tabela `listings` (seção 4), exceto `id` e `created_at`. São 300 imóveis, todos em Goiânia e à venda (decisão de João em 04/11). Tudo vem de `rng = np.random.default_rng(seed)`, gerados em ordem de índice.
 - **`personas.yaml`:** lista com `slug`, `name`, `description` (1 frase), `prior_mean` (as 12 chaves da tabela 5.3), `prior_sd` (12 chaves, todas 1,0) e `demo_defaults` (`city`, `purpose`, `price_min`, `price_max`, com os valores da seção 5.3).
 
 ### Tarefa E10 · `load-results`

@@ -35,4 +35,8 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · A01 · A tela inicial traz os textos sobre o experimento e a E09 ganhou `access_log off;` no Nginx · decisão de João de não coletar dado pessoal; o log padrão do Nginx gravaria o IP dos colegas, vindo do túnel.
 - 2026-11-04 · A01 · M1 e M4 ficam como "aprovado" na versão 2 · João aprovou com ressalvas, e a versão 2 as aplica.
 - 2026-11-04 · A01 · `docs/GUIDE.md`, seção 11.1, passa a dizer 25 pares, 15 para treino e n_train até 15 · João estuda por esse texto para a banca, e o número antigo ficaria errado.
+- 2026-11-04 · A02 · O catálogo inteiro fica em Goiânia e à venda, mantendo 300 imóveis (`GYN-V-0001` a `GYN-V-0300`), e substitui a decisão anterior de limitar só a coleta · decisão de João: a demo não deve mostrar imóveis para os quais não houve coleta.
+- 2026-11-04 · A02 · As colunas `city` e `purpose` e o `CHECK` com `rent` continuam no banco, e a API recusa outros valores em todos os modos · evita refazer a migração e preserva as fases seguintes; o MVP só grava um segmento.
+- 2026-11-04 · A02 · A persona Estudante passa a usar compra, de R$ 150 mil a R$ 350 mil · sem aluguel no catálogo, é a faixa mais barata plausível para esse perfil; confirmar com o catálogo gerado.
+- 2026-11-04 · A01 · M4 vai à versão 3 só para retirar o estado de aluguel · consequência direta do pedido de João, sem outra mudança visual.
 - 2026-11-04 · A01 · E05, E06, E07, E10 e E17 tiveram as listas de arquivos ou os passos ajustados no plano e nas tarefas · decisão de João (Q8).

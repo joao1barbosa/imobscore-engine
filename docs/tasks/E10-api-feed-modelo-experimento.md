@@ -97,7 +97,7 @@ class SessionCreate(BaseModel):
     price_max: Decimal = Field(gt=0)
     persona_slug: Literal["familia", "investidor", "estudante"]
     consent: bool = False
-    # model_validator: price_min < price_max; collection exige consent=True, city="Goiânia" e purpose="sale"; o servidor gera participant_code
+    # model_validator: price_min < price_max; city="Goiânia" e purpose="sale" em todos os modos; collection exige consent=True; o servidor gera participant_code
 
 class SessionOut(BaseModel):
     id: UUID; mode: str; city: str; purpose: str
@@ -194,13 +194,13 @@ class PosteriorOut(BaseModel):
 ```sql
 CREATE TABLE listings (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code            text UNIQUE NOT NULL,              -- ex.: GYN-A-0042
-  city            text NOT NULL,                     -- 'Goiânia' | 'Aparecida de Goiânia' | 'Anápolis'
+  code            text UNIQUE NOT NULL,              -- ex.: GYN-V-0042
+  city            text NOT NULL,                     -- só 'Goiânia' no MVP
   purpose         text NOT NULL CHECK (purpose IN ('sale','rent')),
   kind            text NOT NULL CHECK (kind IN ('apartment','house')),
   title           text NOT NULL,
   neighborhood    text NOT NULL,
-  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- venda: preço; aluguel: aluguel + condomínio
+  price_brl       numeric(12,2) NOT NULL CHECK (price_brl > 0), -- só venda no MVP
   area_m2         numeric(7,1)  NOT NULL CHECK (area_m2 > 0),
   bedrooms        smallint NOT NULL CHECK (bedrooms BETWEEN 1 AND 6),
   bathrooms       smallint NOT NULL CHECK (bathrooms BETWEEN 1 AND 6),

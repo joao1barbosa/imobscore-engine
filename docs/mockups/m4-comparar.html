@@ -61,10 +61,6 @@ const SALE = [
   { kind: "apartment", title: "Apartamento de 3 quartos no Setor Bueno", neighborhood: "Setor Bueno", city: "Goiânia", price: brl(512000), area: "98,6 m²", bedrooms: "3 quartos", bathrooms: "2 banheiros", parking: "2 vagas", age: "8 anos", leisure: "Lazer: 2 itens", dist: "4,2 km do centro", pet: true, doorman: true },
   { kind: "house", title: "Casa de 4 quartos no Jardim América", neighborhood: "Jardim América", city: "Goiânia", price: brl(798000), area: "168,2 m²", bedrooms: "4 quartos", bathrooms: "3 banheiros", parking: "3 vagas", age: "15 anos", leisure: "Sem lazer", dist: "5,8 km do centro", pet: true, doorman: false },
 ];
-const RENT = [
-  { kind: "apartment", title: "Apartamento de 1 quarto no Setor Universitário", neighborhood: "Setor Universitário", city: "Goiânia", price: brl(1450) + "/mês", area: "47,3 m²", bedrooms: "1 quarto", bathrooms: "1 banheiro", parking: "Sem vaga", age: "Novo", leisure: "Lazer: 1 item", dist: "1,9 km do centro", pet: false, doorman: true },
-  { kind: "apartment", title: "Apartamento de 2 quartos no Setor Oeste", neighborhood: "Setor Oeste", city: "Goiânia", price: brl(2180) + "/mês", area: "71,8 m²", bedrooms: "2 quartos", bathrooms: "2 banheiros", parking: "1 vaga", age: "22 anos", leisure: "Lazer: 3 itens", dist: "2,3 km do centro", pet: true, doorman: false },
-];
 
 const art = (kind) => kind === "house"
   ? `<svg viewBox="0 0 120 90" class="h-full w-full" role="img" aria-label="Ilustração de uma casa">
@@ -165,7 +161,6 @@ const skeletonCard = `
 
 const SCREENS = {
   normal: () => shell(progress(12, 25) + heading + pairGrid(SALE[0], SALE[1]) + keyboardHint),
-  rent: () => shell(progress(1, 25) + heading + pairGrid(RENT[0], RENT[1]) + keyboardHint),
   sending: () => shell(`
     ${progress(12, 25)}${heading}
     ${pairGrid(SALE[0], SALE[1], { a: { disabled: true, chosen: true }, b: { disabled: true, dimmed: true } })}
@@ -183,8 +178,7 @@ const SCREENS = {
 };
 
 const STATES = [
-  { id: "normal", label: "Normal · compra", note: "Par da compra, no meio da sessão. O cartão inteiro é o botão." },
-  { id: "rent", label: "Normal · aluguel", note: "Só na demo: a coleta usa apenas compra. Primeiro par da sessão, com “/mês” no preço, “Sem vaga” e “Novo”. O selo aparece só quando verdadeiro." },
+  { id: "normal", label: "Normal", note: "Par no meio da sessão. O cartão inteiro é o botão. Os selos aparecem só quando verdadeiros." },
   { id: "sending", label: "Enviando", note: "O cartão escolhido fica marcado, o outro esmaece e os dois ficam desabilitados." },
   { id: "loading", label: "Carregando", note: "Skeletons no lugar dos cartões. A barra e a pergunta não saltam." },
   { id: "empty", label: "Vazio", note: "A API devolveu 204: aparece por instantes, até abrir o agradecimento ou o feed." },
@@ -207,7 +201,7 @@ function renderGallery() {
     <div class="min-h-dvh bg-muted p-6">
       <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">M4 · Comparação de um par <span class="font-normal text-muted-foreground">versão 2</span></h1>
+          <h1 class="text-2xl font-semibold tracking-tight">M4 · Comparação de um par <span class="font-normal text-muted-foreground">versão 3</span></h1>
           <p class="text-sm text-muted-foreground">Usada na coleta (25 pares) e na demo (3 pares). Especificação em m4-comparar.md.</p>
         </div>
         <a class="rounded-md border bg-card px-3 py-2 text-sm font-medium" href="?theme=${theme === "dark" ? "light" : "dark"}">Ver no tema ${theme === "dark" ? "claro" : "escuro"}</a>
