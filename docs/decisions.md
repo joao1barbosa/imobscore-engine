@@ -21,3 +21,18 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-03 · E01 · `AGENTS.md` e `CLAUDE.md` proíbem citar agentes em commits e PRs, e os commits do PR #1 foram reescritos sem essas menções · pedido de João.
 - 2026-11-03 · E01 · Os blocos da E01 em `docs/PLAN.md` receberam a regra de não citar agentes em commits e PRs · pedido de João.
 - 2026-11-03 · E01 · O commit raiz de `main` foi reescrito sem a menção a agentes, e a branch do PR #1 foi refeita sobre ele · pedido de João.
+- 2026-11-04 · E03 · Mantido `httpx` nos testes, apesar do aviso de depreciação do Starlette em favor de `httpx2` · é só um aviso, o `uv.lock` fixa as versões e a seção 2 prevê `httpx`; trocar agora não traz ganho antes do congelamento.
+- 2026-11-04 · E04 · Aceito o ajuste em `backend/migrations/script.py.mako` (imports em ordem e `str | None`) · a pasta está na lista da tarefa e o molde não altera o esquema.
+- 2026-11-04 · A01 · `theme.css` traz, além das variáveis listadas, `--popover`, `--popover-foreground`, `--secondary-foreground`, `--accent-foreground`, `--destructive-foreground` e `--score-foreground`, mais `@custom-variant dark`, `@theme inline` e a camada base · os componentes do shadcn usam essas cores, as classes do Tailwind 4 dependem do mapeamento e a E05 deixa `index.css` só com os imports.
+- 2026-11-04 · A01 · `copy.ts` traz as mensagens `purpose`, `priceRequired` e `persona` em `collection.validation` · o schema da seção 7 não define texto para esses campos, e o executor não pode inventá-lo.
+- 2026-11-04 · A01 · Os mockups carregam o `theme.css` real por caminho relativo e usam iframes de 375 e 1280 px · assim há uma só fonte de cores e os breakpoints reagem de verdade.
+- 2026-11-04 · A01 · A coleta passa a 25 pares, em vez de 40 · decisão de João, para evitar desistência.
+- 2026-11-04 · A01 · Com 25 pares e 10 de teste, `n_train` fica em {3, 5, 10, 15}, e entram na avaliação só sessões com os 25 pares; `n_test` continua 10 · sobram 15 pares para treino, e reduzir o teste deixaria a medida ainda mais ruidosa.
+- 2026-11-04 · A01 · As referências a "40 pares" em desempenho (seções 5.4 e 5.5, teste (g) da A05 e pergunta 14 do guia) não mudam · são medidas de velocidade do motor, e não o tamanho da coleta.
+- 2026-11-04 · A01 · O servidor gera `participant_code` em sequência (P01, P02...), com `pg_advisory_xact_lock`, e o código não aparece em nenhuma tela · decisão de João, para evitar código digitado errado; quem troca de aparelho vira outra sessão e, sem completar os 25 pares, fica fora da avaliação.
+- 2026-11-04 · A01 · A coleta fica fixa em Goiânia e compra, inclusive na API; o catálogo de 300 imóveis, o onboarding e a demo não mudam · decisão de João para o experimento inicial; a demo da persona Estudante usa aluguel, e cortar o catálogo mudaria A02, E06 e G2 sem pedido.
+- 2026-11-04 · A01 · O cartão de M4 mostra distância ao centro e lazer · decisão de João (Q9), porque estão entre as 12 características.
+- 2026-11-04 · A01 · A tela inicial traz os textos sobre o experimento e a E09 ganhou `access_log off;` no Nginx · decisão de João de não coletar dado pessoal; o log padrão do Nginx gravaria o IP dos colegas, vindo do túnel.
+- 2026-11-04 · A01 · M1 e M4 ficam como "aprovado" na versão 2 · João aprovou com ressalvas, e a versão 2 as aplica.
+- 2026-11-04 · A01 · `docs/GUIDE.md`, seção 11.1, passa a dizer 25 pares, 15 para treino e n_train até 15 · João estuda por esse texto para a banca, e o número antigo ficaria errado.
+- 2026-11-04 · A01 · E05, E06, E07, E10 e E17 tiveram as listas de arquivos ou os passos ajustados no plano e nas tarefas · decisão de João (Q8).
