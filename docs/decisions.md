@@ -47,3 +47,8 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-04 · E06 · A checagem de `--if-empty` vem antes da checagem de sessões, invertendo os passos 1 e 2 do plano · como estava, `make demo` falharia depois da coleta, e com catálogo cheio nada é apagado.
 - 2026-11-04 · A01 · M4 vai à versão 3 só para retirar o estado de aluguel · consequência direta do pedido de João, sem outra mudança visual.
 - 2026-11-04 · A01 · E05, E06, E07, E10 e E17 tiveram as listas de arquivos ou os passos ajustados no plano e nas tarefas · decisão de João (Q8).
+- 2026-11-04 · E07 · `Diagnostics` fica em `schemas/pair.py`, e a E10 o importa em `posterior.py` · `AnswerOut` precisa dele já na E07, e a E10 não pode editar `pair.py`.
+- 2026-11-04 · E07 · `PersonaOut` tem `slug`, `name`, `description` e `demo_defaults` (`city`, `purpose`, `price_min`, `price_max`), sem os pesos da priori · o plano não define o schema, e as telas usam só esses campos.
+- 2026-11-04 · E07 · `price_floor`, `price_ceiling` e os preços de `demo_defaults` são `float` · `Decimal` vira texto no JSON, e o slider e a validação do formulário precisam de números.
+- 2026-11-04 · E07 · A resposta do último par já passa a sessão a `done`, e o `GET /next-pair` seguinte devolve `204` · com `done: true` a tela não chama `next-pair`, então a sessão ficaria em `comparing`; repetir a última resposta devolve `409 session_done`.
+- 2026-11-04 · E07 · Os testes de API semeiam com uma fixture local em cada arquivo, usando `seed_database(db, get_settings())` · a E07 não pode editar `conftest.py`, e o banco de teste fica vazio entre os testes.
