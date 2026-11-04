@@ -1,0 +1,4 @@
+# Arquivos do arquiteto (A01). O executor não os edita, então o Prettier
+# também não os reescreve nem os reprova.
+src/lib/copy.ts
+src/styles/theme.css

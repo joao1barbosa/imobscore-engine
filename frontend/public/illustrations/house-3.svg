@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 72" role="img" aria-hidden="true" focusable="false">
+  <title>Casa com árvore</title>
+  <path d="M42 26 14 50h56z" fill="#055959" />
+  <rect x="22" y="50" width="40" height="16" rx="2" fill="#d2efec" />
+  <rect x="36" y="54" width="12" height="12" rx="1" fill="#4d5b5e" />
+  <rect x="26" y="54" width="7" height="7" rx="1" fill="#4d5b5e" />
+  <rect x="48" y="14" width="6" height="10" rx="1" fill="#4d5b5e" />
+  <circle cx="51" cy="12" r="10" fill="#055959" />
+  <rect x="10" y="66" width="76" height="4" rx="2" fill="#4d5b5e" />
+</svg>

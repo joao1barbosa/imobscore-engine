@@ -1,0 +1,4 @@
+# O MSW roda só nos testes do Vitest (msw/node). O script de build do pacote
+# copia o worker para o navegador e não é usado no prazo curto (corte da seção 1.7).
+allowBuilds:
+  msw: false

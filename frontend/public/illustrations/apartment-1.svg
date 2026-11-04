@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 72" role="img" aria-hidden="true" focusable="false">
+  <title>Prédio de apartamentos</title>
+  <rect x="30" y="8" width="36" height="56" rx="2" fill="#055959" />
+  <g fill="#d2efec">
+    <rect x="36" y="16" width="8" height="8" rx="1" />
+    <rect x="52" y="16" width="8" height="8" rx="1" />
+    <rect x="36" y="32" width="8" height="8" rx="1" />
+    <rect x="52" y="32" width="8" height="8" rx="1" />
+    <rect x="36" y="48" width="8" height="8" rx="1" />
+    <rect x="52" y="48" width="8" height="8" rx="1" />
+  </g>
+  <rect x="16" y="62" width="64" height="4" rx="2" fill="#4d5b5e" />
+</svg>

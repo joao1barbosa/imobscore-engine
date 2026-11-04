@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 72" role="img" aria-hidden="true" focusable="false">
+  <title>Prédio de apartamentos com sacadas</title>
+  <path d="M28 64V22a8 8 0 0 1 8-8h24a8 8 0 0 1 8 8v42z" fill="#055959" />
+  <g fill="#d2efec">
+    <rect x="24" y="28" width="48" height="5" rx="2" />
+    <rect x="24" y="42" width="48" height="5" rx="2" />
+    <rect x="24" y="56" width="48" height="5" rx="2" />
+  </g>
+  <rect x="44" y="18" width="8" height="8" rx="1" fill="#4d5b5e" />
+  <rect x="20" y="66" width="56" height="4" rx="2" fill="#4d5b5e" />
+</svg>
