@@ -32,6 +32,7 @@ Antes de qualquer tarefa, leia o arquivo da tarefa pedida (docs/tasks/<ID>-*.md)
 - Se algo não estiver especificado, não decida: escreva a pergunta em docs/STATUS.md, em "Perguntas abertas", e pare.
 - Não adicione dependências nem mude versões. Não apague, pule nem afrouxe testes.
 - Termine só com todos os comandos de "Verificação" passando. Registre em docs/STATUS.md e faça um commit "tipo(escopo): ID título".
+- Commits e PRs não citam agentes nem ferramentas de IA: sem "Co-Authored-By", sem "Generated with" e sem menção equivalente.
 - Se uma verificação falhar duas vezes seguidas, pare e marque a tarefa como "precisa de revisão do arquiteto".
 ```
 - **`CLAUDE.md`** (exatamente este conteúdo):
@@ -45,6 +46,7 @@ Antes de qualquer tarefa, leia docs/PLAN.md e docs/STATUS.md.
 - Mantenha a interface da seção 5.10. Se precisar mudá-la, avise João e atualize docs/PLAN.md na mesma alteração.
 - Ao mudar uma especificação em docs/PLAN.md, leve a mudança, na mesma alteração, às tarefas E de docs/tasks/ que reproduzem o trecho.
 - Decisões não previstas: escolha a opção mais simples compatível com o plano e registre em docs/decisions.md.
+- Commits e PRs não citam agentes nem ferramentas de IA: sem "Co-Authored-By", sem "Generated with" e sem menção equivalente.
 - Atualize docs/STATUS.md ao fim de cada tarefa.
 ```
 - **`docs/STATUS.md`** começa com os títulos `## Em andamento`, `## Concluídas (ID · data · resumo da verificação)`, `## Correções pendentes (FIX-n)`, `## Perguntas abertas (ID · pergunta · quem responde)` e `## Bloqueios`. `docs/CHECKPOINTS.md` começa com uma seção vazia por checkpoint, de CP1 a CP7. `APPROVAL.md` começa com o cabeçalho `| Tela | Versão | Status | Data | Observações de João |` e uma linha por tela de M1 a M8, com status "pendente".
@@ -95,4 +97,4 @@ reset:    ## apaga o banco (pede confirmação)
 
 ## Atenção
 
-Tarefa concluída. Os blocos de `AGENTS.md` e `CLAUDE.md` acima já trazem as mudanças pedidas por João nas perguntas Q6 e Q7.
+Tarefa concluída. Os blocos de `AGENTS.md` e `CLAUDE.md` acima já trazem as mudanças pedidas por João depois da conclusão: as perguntas Q6 e Q7 e a regra de não citar agentes em commits e PRs.
