@@ -24,5 +24,5 @@ Formato: ID · pergunta · quem responde.
 
 ## Bloqueios
 
-- `uv` não está instalado no notebook: bloqueia a E03 e tudo o que depende dela. O teste do procedimento da E04 usou uma cópia temporária, fora do repositório.
-- `cloudflared` não está instalado no notebook: bloqueia a verificação da E09 (`make tunnel`).
+- `uv` não está instalado no notebook: bloqueia a E03 e tudo o que depende dela. O teste do procedimento da E04 usou uma cópia temporária, fora do repositório. **Resolvido em 2026-11-03: uv 0.13.6 instalado com o mise.**
+- `cloudflared` não está instalado no notebook: bloqueia a verificação da E09 (`make tunnel`). **Resolvido em 2026-11-03: cloudflared 2026.10.7 instalado com o mise.**
