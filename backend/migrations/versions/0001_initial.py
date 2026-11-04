@@ -142,6 +142,9 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint("purpose IN ('sale','rent')", name=op.f("ck_sessions_purpose_values")),
         sa.CheckConstraint("price_min < price_max", name=op.f("ck_sessions_price_min_below_max")),
+        sa.CheckConstraint(
+            "status IN ('comparing','done')", name=op.f("ck_sessions_status_values")
+        ),
         sa.ForeignKeyConstraint(
             ["persona_slug"], ["personas.slug"], name=op.f("fk_sessions_persona_slug_personas")
         ),

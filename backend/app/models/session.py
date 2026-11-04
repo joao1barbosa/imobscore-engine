@@ -43,6 +43,7 @@ class SessionModel(Base):
         CheckConstraint("mode IN ('product','demo','collection')", name="mode_values"),
         CheckConstraint("purpose IN ('sale','rent')", name="purpose_values"),
         CheckConstraint("price_min < price_max", name="price_min_below_max"),
+        CheckConstraint("status IN ('comparing','done')", name="status_values"),
         CheckConstraint(
             "mode <> 'collection' OR (participant_code IS NOT NULL AND consent_at IS NOT NULL)",
             name="collection_requires_consent",
