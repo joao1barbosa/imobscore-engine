@@ -1,0 +1,106 @@
+/*
+ * ImobScore: tema visual. Dono: arquiteto (seção 1.3 do plano).
+ * Importado depois de "tailwindcss" e "tw-animate-css" em index.css.
+ * A paleta parte de um verde-petróleo sobre papel quente, sem depender só da cor para informar.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --font-sans: "Geist Variable", sans-serif;
+
+  --background: oklch(0.985 0.005 90);
+  --foreground: oklch(0.24 0.02 210);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.02 210);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.02 210);
+  --primary: oklch(0.42 0.07 195);
+  --primary-foreground: oklch(0.99 0.004 90);
+  --secondary: oklch(0.945 0.012 90);
+  --secondary-foreground: oklch(0.28 0.025 205);
+  --muted: oklch(0.955 0.008 90);
+  --muted-foreground: oklch(0.46 0.018 210);
+  --accent: oklch(0.93 0.03 190);
+  --accent-foreground: oklch(0.28 0.04 200);
+  --destructive: oklch(0.5 0.18 27);
+  --destructive-foreground: oklch(0.99 0.004 90);
+  --border: oklch(0.89 0.01 90);
+  --input: oklch(0.62 0.015 210);
+  --ring: oklch(0.52 0.08 195);
+
+  /* Selo de score: as três cores servem de fundo com --score-foreground e de texto sobre --card. */
+  --score-low: oklch(0.5 0.17 32);
+  --score-mid: oklch(0.49 0.1 75);
+  --score-high: oklch(0.47 0.09 165);
+  --score-foreground: oklch(0.99 0.004 90);
+}
+
+.dark {
+  --background: oklch(0.19 0.015 215);
+  --foreground: oklch(0.95 0.006 90);
+  --card: oklch(0.235 0.018 215);
+  --card-foreground: oklch(0.95 0.006 90);
+  --popover: oklch(0.235 0.018 215);
+  --popover-foreground: oklch(0.95 0.006 90);
+  --primary: oklch(0.78 0.1 190);
+  --primary-foreground: oklch(0.2 0.025 210);
+  --secondary: oklch(0.3 0.02 215);
+  --secondary-foreground: oklch(0.95 0.006 90);
+  --muted: oklch(0.28 0.016 215);
+  --muted-foreground: oklch(0.76 0.014 210);
+  --accent: oklch(0.33 0.04 195);
+  --accent-foreground: oklch(0.95 0.006 90);
+  --destructive: oklch(0.72 0.15 27);
+  --destructive-foreground: oklch(0.2 0.025 27);
+  --border: oklch(0.34 0.016 215);
+  --input: oklch(0.56 0.016 210);
+  --ring: oklch(0.72 0.1 190);
+
+  --score-low: oklch(0.74 0.14 35);
+  --score-mid: oklch(0.8 0.12 80);
+  --score-high: oklch(0.78 0.12 165);
+  --score-foreground: oklch(0.2 0.02 210);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-score-low: var(--score-low);
+  --color-score-mid: var(--score-mid);
+  --color-score-high: var(--score-high);
+  --color-score-foreground: var(--score-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}

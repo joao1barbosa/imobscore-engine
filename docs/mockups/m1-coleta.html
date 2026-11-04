@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M1 · Coleta · ImobScore</title>
+<!-- Só nos mockups: CDN é permitido aqui (seção 1.8). As cores vêm do theme.css real. -->
+<link rel="stylesheet" href="../../frontend/src/styles/theme.css">
+<style>
+  @font-face {
+    font-family: "Geist Variable";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.68.0/dist/umd/lucide.min.js"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:is(.dark *));
+  @theme inline {
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+  }
+  @layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground font-sans antialiased; }
+    [data-lucide] { @apply inline-block size-4 shrink-0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const stateId = params.get("state");
+const theme = params.get("theme") === "dark" ? "dark" : "light";
+document.documentElement.classList.toggle("dark", theme === "dark");
+
+const brl = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
+const frameHeader = `
+  <header class="border-b bg-card">
+    <div class="mx-auto flex h-12 max-w-5xl items-center justify-between gap-3 px-4 md:h-14">
+      <span class="font-semibold tracking-tight text-primary md:text-lg">ImobScore</span>
+      <span class="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Catálogo de demonstração</span>
+    </div>
+  </header>`;
+
+const shell = (inner) => `
+  <div class="flex min-h-dvh flex-col">
+    ${frameHeader}
+    <main class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-5 md:gap-6 md:py-10">${inner}</main>
+  </div>`;
+
+const intro = `
+  <div class="flex flex-col gap-1">
+    <h1 class="text-2xl font-semibold tracking-tight md:text-3xl">Antes de começar</h1>
+    <p class="text-muted-foreground md:text-lg">Só mais três respostas rápidas.</p>
+  </div>`;
+
+const section = (title, inner) => `
+  <section class="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6">
+    <h2 class="font-semibold">${title}</h2>
+    ${inner}
+  </section>`;
+
+const fieldError = (msg) => (msg ? `<p class="flex items-center gap-1.5 text-sm font-medium text-destructive"><i data-lucide="circle-alert"></i>${msg}</p>` : "");
+const inputBorder = (err) => (err ? "border-destructive" : "border-input");
+
+function field(id, label, control, { help = "", error = "" } = {}) {
+  return `<div class="flex flex-col gap-1.5">
+    <label for="${id}" class="text-sm font-medium">${label}</label>
+    ${control}
+    ${error ? fieldError(error) : help ? `<p class="text-sm text-muted-foreground">${help}</p>` : ""}
+  </div>`;
+}
+
+function consentField(v) {
+  return `<div class="flex flex-col gap-1.5">
+    <label class="flex cursor-pointer items-start gap-3 rounded-lg border ${v.errors?.consent ? "border-destructive" : ""} bg-muted p-3">
+      <span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded border ${v.consent ? "border-primary bg-primary text-primary-foreground" : inputBorder(v.errors?.consent) + " bg-card"}">${v.consent ? '<i data-lucide="check" class="size-3.5"></i>' : ""}</span>
+      <span class="flex flex-col gap-1">
+        <span class="text-sm font-medium">Concordo em participar e em ter estas respostas usadas no experimento.</span>
+        <span class="text-sm text-muted-foreground">Guardamos só um código gerado automaticamente, as respostas deste formulário, cada escolha e o tempo de cada resposta.</span>
+      </span>
+    </label>
+    ${fieldError(v.errors?.consent)}
+  </div>`;
+}
+
+const segmentInfo = `<p class="flex items-center gap-2 rounded-lg bg-muted p-3 text-sm font-medium"><i data-lucide="map-pin" class="text-primary"></i>Imóveis à venda em Goiânia-GO</p>`;
+
+function priceField(v) {
+  const floor = 180000, ceiling = 1950000;
+  const pct = (x) => ((x - floor) / (ceiling - floor)) * 100;
+  const min = v.priceMin ?? floor, max = v.priceMax ?? ceiling;
+  const low = Math.min(min, max), high = Math.max(min, max);
+  const thumb = (x, name) => `<span role="slider" aria-label="${name}" class="absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-card shadow" style="left:${pct(x)}%"></span>`;
+  const money = (id, name, val, err) => `<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+      <label for="${id}" class="text-sm text-muted-foreground">${name}</label>
+      <input id="${id}" inputmode="numeric" value="${brl(val)}" ${v.disabled ? "disabled" : ""}
+        class="h-11 w-full min-w-0 rounded-md border ${err ? "border-destructive" : "border-input"} bg-card px-3 text-base tabular-nums disabled:bg-muted disabled:opacity-60 ${focusRing}">
+    </div>`;
+  return `<div class="flex flex-col gap-3">
+    <span class="text-sm font-medium">Faixa de preço</span>
+    <div class="relative mx-3 h-6">
+      <div class="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-secondary"></div>
+      <div class="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary" style="left:${pct(low)}%;right:${100 - pct(high)}%"></div>
+      ${thumb(min, "Mínimo")}${thumb(max, "Máximo")}
+    </div>
+    <div class="flex gap-3">${money("price-min", "Mínimo", min)}${money("price-max", "Máximo", max, v.errors?.price)}</div>
+    ${v.errors?.price ? fieldError(v.errors.price) : `<p class="text-sm text-muted-foreground">Neste catálogo: de ${brl(floor)} a ${brl(ceiling)}</p>`}
+  </div>`;
+}
+
+const PERSONAS = [
+  { slug: "familia", icon: "users", name: "Família", description: "Prioriza espaço, quartos e vagas, mesmo pagando um pouco mais." },
+  { slug: "investidor", icon: "trending-up", name: "Investidor", description: "Busca bom preço e localização, pensando em alugar ou revender." },
+  { slug: "estudante", icon: "graduation-cap", name: "Estudante", description: "Quer pagar pouco e morar perto do centro." },
+];
+
+function personaField(v) {
+  const card = (p) => {
+    const on = v.persona === p.slug;
+    return `<label class="relative flex cursor-pointer items-start gap-3 rounded-lg border p-3 md:flex-col md:gap-2 ${on ? "border-primary bg-accent text-accent-foreground ring-1 ring-primary" : v.errors?.persona ? "border-destructive" : "border-input"}">
+      <span class="grid size-9 shrink-0 place-items-center rounded-md ${on ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}"><i data-lucide="${p.icon}"></i></span>
+      <span class="flex flex-col gap-0.5"><span class="text-sm font-semibold">${p.name}</span>
+      <span class="text-sm ${on ? "" : "text-muted-foreground"}">${p.description}</span></span>
+      ${on ? '<i data-lucide="check" class="absolute right-3 top-3 text-primary"></i>' : ""}
+    </label>`;
+  };
+  return `<div class="flex flex-col gap-2" role="radiogroup" aria-label="Qual perfil mais parece com você?">
+    <div class="grid gap-2 md:grid-cols-3">${PERSONAS.map(card).join("")}</div>
+    ${fieldError(v.errors?.persona)}
+  </div>`;
+}
+
+function submitButton(v) {
+  return `<button type="submit" ${v.sending ? "disabled" : ""} class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-6 text-base font-medium text-primary-foreground hover:opacity-90 disabled:opacity-70 md:w-auto md:self-end ${focusRing}">
+    ${v.sending ? '<i data-lucide="loader-circle" class="animate-spin"></i>Preparando os pares' : 'Começar os 25 pares<i data-lucide="arrow-right"></i>'}
+  </button>`;
+}
+
+function formScreen(v = {}) {
+  return shell(`
+    ${intro}
+    ${section("Sua participação", consentField(v))}
+    ${section("O que você procuraria", segmentInfo + priceField(v))}
+    ${section("Qual perfil mais parece com você?", personaField(v))}
+    ${submitButton(v)}`);
+}
+
+const welcomeItem = (icon, title, body) => `
+  <section class="flex gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:gap-4 md:p-6">
+    <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground"><i data-lucide="${icon}"></i></span>
+    <div class="flex flex-col gap-1"><h2 class="font-semibold">${title}</h2><p class="text-sm text-muted-foreground md:text-base">${body}</p></div>
+  </section>`;
+
+const welcomeScreen = () => shell(`
+  <div class="flex flex-col gap-1">
+    <h1 class="text-2xl font-semibold tracking-tight md:text-3xl">Ajude a testar o ImobScore</h1>
+    <p class="text-muted-foreground md:text-lg">O ImobScore tenta descobrir de qual imóvel cada pessoa gosta só pelas escolhas que ela faz. Este experimento mede se ele consegue.</p>
+  </div>
+  ${welcomeItem("mouse-pointer-click", "O que você vai fazer", "Escolher, em 25 pares de imóveis fictícios à venda em Goiânia-GO, qual você prefere. Antes, você informa uma faixa de preço e um perfil. Leva cerca de 2 minutos, e não existe resposta certa.")}
+  ${welcomeItem("chart-line", "Como usamos suas respostas", "Suas escolhas treinam um modelo, e depois medimos se ele acerta suas preferências melhor que outros métodos. Os resultados entram em um trabalho acadêmico, sem identificar ninguém.")}
+  ${welcomeItem("shield-check", "Nenhum dado pessoal", "Não coletamos nome, e-mail, telefone nem qualquer outro dado pessoal. Guardamos só um código gerado automaticamente, suas respostas e o tempo de cada escolha.")}
+  <button type="button" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-6 text-base font-medium text-primary-foreground hover:opacity-90 md:w-auto md:self-end ${focusRing}">Quero participar<i data-lucide="arrow-right"></i></button>`);
+
+const FILLED = { consent: true, priceMin: 350000, priceMax: 900000, persona: "familia" };
+
+const skeleton = (h) => `<div class="${h} w-full animate-pulse rounded-md bg-muted"></div>`;
+const skeletonSection = (lines) => `<div class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-6">${skeleton("h-5 !w-1/3")}${lines.map(skeleton).join("")}</div>`;
+
+const message = (icon, tone, title, description, action = "") => shell(`
+  <div class="my-auto flex flex-col items-center gap-3 text-center">
+    <span class="grid size-12 place-items-center rounded-full ${tone}"><i data-lucide="${icon}" class="size-6"></i></span>
+    <h1 class="text-xl font-semibold tracking-tight">${title}</h1>
+    <p class="max-w-md text-sm text-muted-foreground">${description}</p>
+    ${action}
+  </div>`);
+
+const SCREENS = {
+  welcome: welcomeScreen,
+  form: () => formScreen(),
+  filled: () => formScreen(FILLED),
+  validation: () => formScreen({
+    priceMin: 900000, priceMax: 350000,
+    errors: { consent: "É preciso concordar para participar", price: "O máximo precisa ser maior que o mínimo", persona: "Escolha um perfil" },
+  }),
+  submitting: () => formScreen({ ...FILLED, disabled: true, sending: true }),
+  "submit-error": () => formScreen(FILLED) + `
+    <div role="alert" class="fixed inset-x-4 bottom-4 mx-auto flex max-w-md items-center gap-2 rounded-lg border border-destructive bg-card p-3 text-sm font-medium text-card-foreground shadow-lg">
+      <i data-lucide="triangle-alert" class="text-destructive"></i>Não foi possível começar. Tente de novo.
+    </div>`,
+  loading: () => shell(`${intro}<div class="flex flex-col gap-4" aria-busy="true"><span class="sr-only" role="status">Carregando o formulário</span>${skeletonSection(["h-20"])}${skeletonSection(["h-11", "h-24"])}${skeletonSection(["h-20"])}</div>`),
+  empty: () => message("package-open", "bg-secondary text-secondary-foreground", "A coleta não está disponível agora", "O catálogo ainda não foi carregado. Avise quem enviou o link."),
+  error: () => message("triangle-alert", "bg-destructive text-destructive-foreground", "Não foi possível abrir a coleta", "Verifique sua conexão e tente de novo.",
+    `<button type="button" class="mt-1 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 ${focusRing}"><i data-lucide="refresh-cw"></i>Tentar de novo</button>`),
+  thanks: () => shell(`
+    <div class="my-auto flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center shadow-sm md:p-10">
+      <span class="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground"><i data-lucide="check" class="size-7"></i></span>
+      <h1 class="text-2xl font-semibold tracking-tight md:text-3xl">Obrigado por participar!</h1>
+      <p class="text-lg font-medium">Suas 25 escolhas foram registradas.</p>
+      <p class="max-w-md text-muted-foreground">Elas vão ajudar a medir se o ImobScore aprende o gosto de cada pessoa.</p>
+      <p class="text-sm text-muted-foreground">Você já pode fechar esta página.</p>
+    </div>`),
+};
+
+const STATES = [
+  { id: "welcome", label: "1 · Tela inicial", note: "Explica o experimento antes de pedir qualquer coisa. Não chama a API." },
+  { id: "form", label: "2 · Formulário vazio", note: "Consentimento primeiro. Cidade e finalidade são fixas, e o código é gerado pelo servidor: a pessoa nunca o vê." },
+  { id: "filled", label: "3 · Formulário preenchido", note: "O slider e os dois campos ficam sincronizados, em passos de R$ 10 mil." },
+  { id: "pairs", label: "4 · Os 25 pares (M4)", note: "Depois de enviar, a mesma rota /coleta mostra o componente de M4.", src: "m4-comparar.html" },
+  { id: "thanks", label: "5 · Agradecimento", note: "Fim do fluxo, sem feed (corte da seção 1.7). Recarregar a página continua aqui." },
+  { id: "validation", label: "Erros de validação", note: "As mensagens aparecem ao enviar, junto de cada campo, e o foco vai ao primeiro campo com erro." },
+  { id: "submitting", label: "Enviando", note: "Campos e botão desabilitados até a sessão ser criada." },
+  { id: "submit-error", label: "Erro ao enviar", note: "POST /sessions falhou: aviso, e nada do que foi preenchido se perde." },
+  { id: "loading", label: "Carregando", note: "GET /meta/options e /meta/personas em andamento, ao abrir o formulário." },
+  { id: "empty", label: "Vazio", note: "A API respondeu sem o segmento Goiânia e compra, ou sem personas: banco sem seed." },
+  { id: "error", label: "Erro ao carregar", note: "GET /meta/options ou /meta/personas falhou." },
+];
+
+function renderGallery() {
+  document.title = "M1 · Coleta";
+  const q = (s) => s.src ? `${s.src}?state=normal&theme=${theme}` : `?state=${s.id}&theme=${theme}`;
+  const frame = (s, width, height, name) => `
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium text-muted-foreground">${name}</span>
+      <div class="overflow-hidden rounded-lg border-2 bg-card">
+        <iframe title="${s.id} ${name}" loading="lazy" data-w="${width}" data-frame="${s.id}-${width}"
+          src="${q(s)}&frame=${s.id}-${width}" style="width:${width}px;height:${height}px;border:0;transform-origin:0 0;display:block"></iframe>
+      </div>
+    </div>`;
+  document.getElementById("root").innerHTML = `
+    <div class="min-h-dvh bg-muted p-6">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">M1 · Coleta <span class="font-normal text-muted-foreground">versão 2</span></h1>
+          <p class="text-sm text-muted-foreground">Rota /coleta. Fluxo de 1 a 5; depois, os demais estados. Especificação em m1-coleta.md.</p>
+        </div>
+        <a class="rounded-md border bg-card px-3 py-2 text-sm font-medium" href="?theme=${theme === "dark" ? "light" : "dark"}">Ver no tema ${theme === "dark" ? "claro" : "escuro"}</a>
+      </header>
+      <div class="flex flex-col gap-10">
+        ${STATES.map((s) => `
+          <section>
+            <h2 class="text-lg font-semibold">${s.label}</h2>
+            <p class="mb-2 text-sm text-muted-foreground">${s.note} <a class="underline" target="_blank" href="${q(s)}">Abrir em tamanho real</a></p>
+            <div class="flex items-start gap-6">
+              ${frame(s, 375, 667, "Celular · 375 px")}
+              ${frame(s, 1280, 800, "Notebook · 1280 px")}
+            </div>
+          </section>`).join("")}
+      </div>
+    </div>`;
+  const fit = () => {
+    const available = document.getElementById("root").clientWidth - 48 - 375 - 24 - 8;
+    const scale = Math.min(1, Math.max(0.4, available / 1280));
+    document.querySelectorAll("iframe[data-w='1280']").forEach((f) => {
+      f.style.transform = `scale(${scale})`;
+      const box = f.parentElement;
+      box.style.width = `${1280 * scale + 4}px`;
+      box.style.height = `${parseFloat(f.style.height) * scale + 4}px`;
+    });
+  };
+  addEventListener("resize", fit);
+  addEventListener("message", (e) => {
+    const f = document.querySelector(`iframe[data-frame="${e.data?.frame}"]`);
+    if (f && e.data.height > parseFloat(f.style.height)) { f.style.height = `${e.data.height}px`; fit(); }
+  });
+  fit();
+}
+
+if (stateId) {
+  const render = SCREENS[stateId] || SCREENS.welcome;
+  document.getElementById("root").innerHTML = render();
+} else {
+  renderGallery();
+}
+if (window.lucide) lucide.createIcons();
+if (stateId && parent !== window) {
+  const frame = params.get("frame");
+  const send = () => parent.postMessage({ frame, height: document.documentElement.scrollHeight }, "*");
+  addEventListener("load", send);
+  new ResizeObserver(send).observe(document.body);
+}
+</script>
+</body>
+</html>

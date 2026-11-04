@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M4 · Comparação de um par · ImobScore</title>
+<!-- Só nos mockups: CDN é permitido aqui (seção 1.8). As cores vêm do theme.css real. -->
+<link rel="stylesheet" href="../../frontend/src/styles/theme.css">
+<style>
+  @font-face {
+    font-family: "Geist Variable";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.68.0/dist/umd/lucide.min.js"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:is(.dark *));
+  @theme inline {
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+  }
+  @layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground font-sans antialiased; }
+    [data-lucide] { @apply inline-block size-4 shrink-0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const stateId = params.get("state");
+const theme = params.get("theme") === "dark" ? "dark" : "light";
+document.documentElement.classList.toggle("dark", theme === "dark");
+
+const brl = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+
+const SALE = [
+  { kind: "apartment", title: "Apartamento de 3 quartos no Setor Bueno", neighborhood: "Setor Bueno", city: "Goiânia", price: brl(512000), area: "98,6 m²", bedrooms: "3 quartos", bathrooms: "2 banheiros", parking: "2 vagas", age: "8 anos", leisure: "Lazer: 2 itens", dist: "4,2 km do centro", pet: true, doorman: true },
+  { kind: "house", title: "Casa de 4 quartos no Jardim América", neighborhood: "Jardim América", city: "Goiânia", price: brl(798000), area: "168,2 m²", bedrooms: "4 quartos", bathrooms: "3 banheiros", parking: "3 vagas", age: "15 anos", leisure: "Sem lazer", dist: "5,8 km do centro", pet: true, doorman: false },
+];
+const RENT = [
+  { kind: "apartment", title: "Apartamento de 1 quarto no Setor Universitário", neighborhood: "Setor Universitário", city: "Goiânia", price: brl(1450) + "/mês", area: "47,3 m²", bedrooms: "1 quarto", bathrooms: "1 banheiro", parking: "Sem vaga", age: "Novo", leisure: "Lazer: 1 item", dist: "1,9 km do centro", pet: false, doorman: true },
+  { kind: "apartment", title: "Apartamento de 2 quartos no Setor Oeste", neighborhood: "Setor Oeste", city: "Goiânia", price: brl(2180) + "/mês", area: "71,8 m²", bedrooms: "2 quartos", bathrooms: "2 banheiros", parking: "1 vaga", age: "22 anos", leisure: "Lazer: 3 itens", dist: "2,3 km do centro", pet: true, doorman: false },
+];
+
+const art = (kind) => kind === "house"
+  ? `<svg viewBox="0 0 120 90" class="h-full w-full" role="img" aria-label="Ilustração de uma casa">
+      <path d="M18 44 60 12l42 32" fill="none" stroke="var(--primary)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+      <rect x="28" y="42" width="64" height="38" rx="2" fill="var(--primary)"/>
+      <rect x="53" y="56" width="14" height="24" fill="var(--accent)"/>
+      <rect x="36" y="52" width="11" height="11" fill="var(--accent)"/><rect x="73" y="52" width="11" height="11" fill="var(--accent)"/>
+    </svg>`
+  : `<svg viewBox="0 0 120 90" class="h-full w-full" role="img" aria-label="Ilustração de um prédio">
+      <rect x="38" y="10" width="44" height="70" rx="2" fill="var(--primary)"/>
+      ${[20, 34, 48].map((y) => `<rect x="46" y="${y}" width="10" height="9" fill="var(--accent)"/><rect x="64" y="${y}" width="10" height="9" fill="var(--accent)"/>`).join("")}
+      <rect x="54" y="64" width="12" height="16" fill="var(--accent)"/>
+    </svg>`;
+
+const spec = (icon, text, extra = "") => `<li class="flex items-center gap-1.5 ${extra}"><i data-lucide="${icon}" class="text-muted-foreground"></i>${text}</li>`;
+const seal = (icon, text) => `<span class="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"><i data-lucide="${icon}" class="size-3.5"></i>${text}</span>`;
+
+function listingCard(l, key, { disabled = false, chosen = false, dimmed = false } = {}) {
+  return `
+  <button type="button" ${disabled ? "disabled" : ""} aria-label="Escolher ${l.title}, ${l.price}"
+    class="group relative flex w-full gap-3 overflow-hidden rounded-xl border bg-card p-3 text-left text-card-foreground shadow-sm transition
+           md:flex-col md:gap-0 md:p-0
+           ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:-translate-y-0.5 hover:border-primary hover:shadow-md"}
+           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring
+           ${chosen ? "border-primary ring-2 ring-primary" : ""} ${dimmed ? "opacity-50" : ""}">
+    <div class="size-20 shrink-0 rounded-lg bg-accent p-2 md:h-44 md:w-full md:rounded-none md:p-6">${art(l.kind)}</div>
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5 md:gap-3 md:p-5">
+      <div>
+        <p class="text-xl font-semibold tracking-tight md:text-2xl">${l.price}</p>
+        <h2 class="text-sm font-medium leading-snug md:text-base">${l.title}</h2>
+        <p class="text-xs text-muted-foreground md:text-sm">${l.neighborhood} · ${l.city}</p>
+      </div>
+      <ul class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs md:gap-y-2 md:text-sm">
+        ${spec("ruler", l.area)}${spec("bed-double", l.bedrooms)}${spec("bath", l.bathrooms)}${spec("car-front", l.parking)}${spec("calendar-days", l.age)}${spec("dumbbell", l.leisure)}${spec("map-pin", l.dist, "col-span-2")}
+      </ul>
+      <div class="flex min-h-6 flex-wrap gap-1.5">
+        ${l.pet ? seal("paw-print", "Aceita pet") : ""}${l.doorman ? seal("shield-check", "Portaria 24 h") : ""}
+      </div>
+    </div>
+    <kbd class="absolute right-3 top-3 hidden rounded-md border bg-card px-2 py-0.5 font-sans text-sm font-medium text-muted-foreground md:block">${key}</kbd>
+    ${chosen ? `<span class="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-primary text-primary-foreground"><i data-lucide="check"></i></span>` : ""}
+  </button>`;
+}
+
+const frameHeader = `
+  <header class="border-b bg-card">
+    <div class="mx-auto flex h-12 max-w-5xl items-center justify-between gap-3 px-4 md:h-14">
+      <span class="font-semibold tracking-tight text-primary md:text-lg">ImobScore</span>
+      <span class="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Catálogo de demonstração</span>
+    </div>
+  </header>`;
+
+const progress = (i, n) => `
+  <div class="flex items-center gap-3" aria-live="polite">
+    <span class="shrink-0 text-sm font-medium tabular-nums">Par ${i} de ${n}</span>
+    <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${i - 1}">
+      <div class="h-full rounded-full bg-primary" style="width:${((i - 1) / n) * 100}%"></div>
+    </div>
+  </div>`;
+
+const heading = `
+  <div>
+    <h1 class="text-xl font-semibold tracking-tight md:text-3xl">Qual você prefere?</h1>
+    <p class="text-sm text-muted-foreground md:text-base">Escolha o que mais combina com você, mesmo que nenhum seja perfeito.</p>
+  </div>`;
+
+const keyboardHint = `<p class="hidden items-center justify-center gap-2 text-sm text-muted-foreground md:flex">Use as setas do teclado para escolher</p>`;
+
+const pairGrid = (a, b, opts = {}) => `
+  <div class="grid gap-3 md:grid-cols-2 md:gap-6">
+    ${listingCard(a, "←", opts.a)}${listingCard(b, "→", opts.b)}
+  </div>`;
+
+const shell = (inner, narrow = false) => `
+  <div class="flex min-h-dvh flex-col">
+    ${frameHeader}
+    <main class="mx-auto flex w-full ${narrow ? "max-w-md flex-1 items-center" : "max-w-5xl"} flex-col gap-3 px-4 py-3 md:gap-6 md:py-8">${inner}</main>
+  </div>`;
+
+const message = (icon, tone, title, description, action = "") => shell(`
+  <div class="my-auto flex flex-col items-center gap-3 text-center">
+    <span class="grid size-12 place-items-center rounded-full ${tone}"><i data-lucide="${icon}" class="size-6"></i></span>
+    <h1 class="text-xl font-semibold tracking-tight">${title}</h1>
+    <p class="text-sm text-muted-foreground">${description}</p>
+    ${action}
+  </div>`, true);
+
+const skeletonCard = `
+  <div class="flex gap-3 rounded-xl border bg-card p-3 md:flex-col md:gap-0 md:p-0">
+    <div class="size-20 shrink-0 animate-pulse rounded-lg bg-muted md:h-44 md:w-full md:rounded-none"></div>
+    <div class="flex flex-1 flex-col gap-2 md:gap-3 md:p-5">
+      <div class="h-7 w-2/3 animate-pulse rounded-md bg-muted"></div>
+      <div class="h-4 w-full animate-pulse rounded-md bg-muted"></div>
+      <div class="h-4 w-1/2 animate-pulse rounded-md bg-muted"></div>
+      <div class="h-12 w-full animate-pulse rounded-md bg-muted"></div>
+    </div>
+  </div>`;
+
+const SCREENS = {
+  normal: () => shell(progress(12, 25) + heading + pairGrid(SALE[0], SALE[1]) + keyboardHint),
+  rent: () => shell(progress(1, 25) + heading + pairGrid(RENT[0], RENT[1]) + keyboardHint),
+  sending: () => shell(`
+    ${progress(12, 25)}${heading}
+    ${pairGrid(SALE[0], SALE[1], { a: { disabled: true, chosen: true }, b: { disabled: true, dimmed: true } })}
+    <p class="flex items-center justify-center gap-2 text-sm text-muted-foreground" role="status"><i data-lucide="loader-circle" class="animate-spin"></i>Registrando sua escolha</p>`),
+  loading: () => shell(`
+    ${progress(12, 25)}${heading}
+    <div class="grid gap-3 md:grid-cols-2 md:gap-6" aria-busy="true"><span class="sr-only" role="status">Carregando o próximo par</span>${skeletonCard}${skeletonCard}</div>`),
+  empty: () => message("circle-check", "bg-accent text-accent-foreground", "Você respondeu a todos os pares", "Estamos abrindo o próximo passo."),
+  error: () => message("triangle-alert", "bg-destructive text-destructive-foreground", "Não foi possível carregar o par", "Suas respostas anteriores estão salvas. Tente de novo.",
+    `<button type="button" class="mt-1 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"><i data-lucide="refresh-cw"></i>Tentar de novo</button>`),
+  "answer-error": () => shell(progress(12, 25) + heading + pairGrid(SALE[0], SALE[1]) + keyboardHint) + `
+    <div role="alert" class="fixed inset-x-4 bottom-4 mx-auto flex max-w-md items-center gap-2 rounded-lg border border-destructive bg-card p-3 text-sm font-medium text-card-foreground shadow-lg">
+      <i data-lucide="triangle-alert" class="text-destructive"></i>Sua escolha não foi registrada. Toque de novo no imóvel.
+    </div>`,
+};
+
+const STATES = [
+  { id: "normal", label: "Normal · compra", note: "Par da compra, no meio da sessão. O cartão inteiro é o botão." },
+  { id: "rent", label: "Normal · aluguel", note: "Só na demo: a coleta usa apenas compra. Primeiro par da sessão, com “/mês” no preço, “Sem vaga” e “Novo”. O selo aparece só quando verdadeiro." },
+  { id: "sending", label: "Enviando", note: "O cartão escolhido fica marcado, o outro esmaece e os dois ficam desabilitados." },
+  { id: "loading", label: "Carregando", note: "Skeletons no lugar dos cartões. A barra e a pergunta não saltam." },
+  { id: "empty", label: "Vazio", note: "A API devolveu 204: aparece por instantes, até abrir o agradecimento ou o feed." },
+  { id: "error", label: "Erro ao carregar", note: "GET /next-pair falhou. As respostas anteriores continuam salvas." },
+  { id: "answer-error", label: "Erro ao responder", note: "POST falhou: aviso e os cartões voltam a aceitar o toque. O par não muda." },
+];
+
+function renderGallery() {
+  document.title = "M4 · Comparação de um par";
+  const q = (id, t = theme) => `?state=${id}&theme=${t}`;
+  const frame = (id, width, height, name) => `
+    <div class="flex flex-col gap-1" data-frame-wrap="${width}">
+      <span class="text-xs font-medium text-muted-foreground">${name}</span>
+      <div class="overflow-hidden rounded-lg border-2 bg-card" data-scale-box>
+        <iframe title="${id} ${name}" loading="lazy" data-w="${width}" data-h="${height}" data-frame="${id}-${width}"
+          src="${q(id)}&frame=${id}-${width}" style="width:${width}px;height:${height}px;border:0;transform-origin:0 0;display:block"></iframe>
+      </div>
+    </div>`;
+  document.getElementById("root").innerHTML = `
+    <div class="min-h-dvh bg-muted p-6">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">M4 · Comparação de um par <span class="font-normal text-muted-foreground">versão 2</span></h1>
+          <p class="text-sm text-muted-foreground">Usada na coleta (25 pares) e na demo (3 pares). Especificação em m4-comparar.md.</p>
+        </div>
+        <a class="rounded-md border bg-card px-3 py-2 text-sm font-medium" href="?theme=${theme === "dark" ? "light" : "dark"}">Ver no tema ${theme === "dark" ? "claro" : "escuro"}</a>
+      </header>
+      <div class="flex flex-col gap-10">
+        ${STATES.map((s) => `
+          <section>
+            <h2 class="text-lg font-semibold">${s.label}</h2>
+            <p class="mb-2 text-sm text-muted-foreground">${s.note} <a class="underline" target="_blank" href="${q(s.id)}">Abrir em tamanho real</a></p>
+            <div class="flex items-start gap-6">
+              ${frame(s.id, 375, 667, "Celular · 375 px")}
+              ${frame(s.id, 1280, 800, "Notebook · 1280 px")}
+            </div>
+          </section>`).join("")}
+      </div>
+    </div>`;
+  const fit = () => {
+    const available = document.getElementById("root").clientWidth - 48 - 375 - 24 - 8;
+    const scale = Math.min(1, Math.max(0.4, available / 1280));
+    document.querySelectorAll("iframe[data-w='1280']").forEach((f) => {
+      f.style.transform = `scale(${scale})`;
+      const box = f.parentElement;
+      box.style.width = `${1280 * scale + 4}px`;
+      box.style.height = `${parseFloat(f.style.height) * scale + 4}px`;
+    });
+  };
+  addEventListener("resize", fit);
+  addEventListener("message", (e) => {
+    const f = document.querySelector(`iframe[data-frame="${e.data?.frame}"]`);
+    if (f && e.data.height > parseFloat(f.style.height)) { f.style.height = `${e.data.height}px`; fit(); }
+  });
+  fit();
+}
+
+if (stateId) {
+  const render = SCREENS[stateId] || SCREENS.normal;
+  document.getElementById("root").innerHTML = render();
+} else {
+  renderGallery();
+}
+if (window.lucide) lucide.createIcons();
+if (stateId && parent !== window) {
+  const frame = params.get("frame");
+  const send = () => parent.postMessage({ frame, height: document.documentElement.scrollHeight }, "*");
+  addEventListener("load", send);
+  new ResizeObserver(send).observe(document.body);
+}
+</script>
+</body>
+</html>
