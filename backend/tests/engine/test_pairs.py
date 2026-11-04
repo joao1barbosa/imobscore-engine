@@ -1,4 +1,4 @@
-"""Testes dos pares aleatórios da coleta e da semente por sessão (seção 5.7)."""
+"""Testes dos pares aleatórios, do BALD e da semente por sessão (seção 5.7)."""
 
 from collections import Counter
 from hashlib import sha256
@@ -7,7 +7,8 @@ from uuid import UUID
 import numpy as np
 import pytest
 
-from app.engine import random_pairs, seed_for
+from app.engine import next_pair_bald, random_pairs, seed_for
+from app.engine.pairs import bald_scores
 
 
 def test_no_repeated_pair_and_at_most_three_appearances() -> None:
@@ -75,3 +76,106 @@ def test_seed_for_follows_the_interface() -> None:
     assert seed_for(session, 0) != seed_for(session, 1)
     assert 0 <= seed_for(session, 0) < 2**64
     assert seed_for("abc", 0) == int.from_bytes(sha256(b"abc:0").digest()[:8], "big")
+
+
+# BALD
+
+
+N_FEATURES = 12
+
+
+def test_bald_nunca_e_negativo_em_nenhum_par() -> None:
+    rng = np.random.default_rng(1)
+    D = rng.normal(0.0, 3.0, (500, N_FEATURES))
+    samples = rng.normal(0.0, 2.0, (800, N_FEATURES))
+
+    assert np.all(bald_scores(D, samples) >= 0.0)
+
+
+def test_bald_com_amostras_quase_iguais_fica_perto_de_zero() -> None:
+    rng = np.random.default_rng(2)
+    w = rng.normal(0.0, 1.0, N_FEATURES)
+    samples = w + 1e-6 * rng.standard_normal((800, N_FEATURES))
+    D = rng.standard_normal((300, N_FEATURES))
+
+    assert bald_scores(D, samples).max() < 1e-6
+
+
+def test_bald_prefere_o_par_em_que_as_amostras_discordam() -> None:
+    # Só o peso 0 é incerto. O par 0 mexe nesse peso; o par 1, em outro, de peso fixo em 0.
+    samples = np.zeros((1000, N_FEATURES))
+    samples[:, 0] = np.random.default_rng(3).normal(0.0, 2.0, 1000)
+    D = np.zeros((2, N_FEATURES))
+    D[0, 0] = 1.0
+    D[1, 1] = 1.0
+
+    scores = bald_scores(D, samples)
+
+    # O par 1 dá p = 0,5 em toda amostra: dúvida total, mas nada a aprender.
+    assert scores[1] == pytest.approx(0.0, abs=1e-12)
+    assert scores[0] > 0.05
+
+
+def test_bald_bate_com_a_conta_a_mao() -> None:
+    # p_s = 0,9 e 0,1: H(0,5) = 0,6931; H(0,9) = H(0,1) = 0,3251; BALD = 0,3681.
+    logit = float(np.log(9.0))
+    samples = np.zeros((2, N_FEATURES))
+    samples[:, 0] = [logit, -logit]
+    D = np.zeros((1, N_FEATURES))
+    D[0, 0] = 1.0
+
+    assert bald_scores(D, samples)[0] == pytest.approx(0.3681, abs=1e-4)
+
+
+def test_next_pair_bald_nunca_repete_um_par_mostrado() -> None:
+    rng = np.random.default_rng(4)
+    Z = rng.standard_normal((6, N_FEATURES))
+    samples = rng.normal(0.0, 1.0, (200, N_FEATURES))
+    shown: set[frozenset[int]] = set()
+
+    # Com 6 imóveis há 15 pares possíveis: todos saem, cada um uma vez.
+    for _ in range(15):
+        left, right = next_pair_bald(Z, samples, shown, rng)
+        assert left != right
+        assert frozenset((left, right)) not in shown
+        shown.add(frozenset((left, right)))
+
+    assert len(shown) == 15
+    with pytest.raises(ValueError):
+        next_pair_bald(Z, samples, shown, rng)
+
+
+def test_next_pair_bald_escolhe_o_melhor_entre_os_sorteados() -> None:
+    rng = np.random.default_rng(5)
+    Z = rng.standard_normal((10, N_FEATURES))
+    samples = rng.normal(0.0, 1.0, (500, N_FEATURES))
+
+    # k maior que os 45 pares possíveis: todos entram, e sai o de maior BALD.
+    left, right = next_pair_bald(Z, samples, set(), rng)
+
+    first, second = np.triu_indices(10, k=1)
+    scores = bald_scores(Z[first] - Z[second], samples)
+    best = int(np.argmax(scores))
+    assert {left, right} == {int(first[best]), int(second[best])}
+
+
+def test_next_pair_bald_sorteia_o_lado() -> None:
+    rng = np.random.default_rng(6)
+    Z = rng.standard_normal((5, N_FEATURES))
+    samples = rng.normal(0.0, 1.0, (100, N_FEATURES))
+
+    pairs = [next_pair_bald(Z, samples, set(), rng) for _ in range(200)]
+
+    first_lower = sum(left < right for left, right in pairs)
+    assert 60 < first_lower < 140
+
+
+def test_next_pair_bald_usa_a_semente() -> None:
+    rng = np.random.default_rng(7)
+    Z = rng.standard_normal((300, N_FEATURES))
+    samples = rng.normal(0.0, 1.0, (400, N_FEATURES))
+
+    first = next_pair_bald(Z, samples, set(), np.random.default_rng(1))
+    second = next_pair_bald(Z, samples, set(), np.random.default_rng(1))
+
+    assert first == second

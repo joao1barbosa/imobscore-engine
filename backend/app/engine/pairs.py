@@ -1,9 +1,11 @@
-"""Escolha de pares (seção 5.7). Nesta etapa, só os pares aleatórios da coleta."""
+"""Escolha de pares (seção 5.7): aleatórios na coleta, por informação (BALD) na demo."""
 
 from hashlib import sha256
 from uuid import UUID
 
 import numpy as np
+
+from app.engine.model import sigmoid
 
 _TRIES_PER_PAIR = 50
 _MAX_RESTARTS = 100
@@ -79,3 +81,50 @@ def random_pairs(
         f"Não foi possível sortear {n_pairs} pares com {n_items} itens "
         f"e até {max_appearances} aparições."
     )
+
+
+def _entropy(p: np.ndarray) -> np.ndarray:
+    """Entropia de uma escolha com probabilidade p, em nats. No limite, 0 log 0 = 0."""
+    clipped = np.clip(p, 1e-12, 1.0 - 1e-12)
+    entropy: np.ndarray = -clipped * np.log(clipped) - (1.0 - clipped) * np.log1p(-clipped)
+    return entropy
+
+
+def bald_scores(D: np.ndarray, samples: np.ndarray) -> np.ndarray:
+    """D (k, 12), samples (S, 12) -> (k,). Quanto a resposta de cada par ensina sobre os pesos.
+
+    É a incerteza total menos a incerteza que sobraria mesmo conhecendo os pesos. Sobra
+    mais onde as amostras discordam entre si, e não onde cada uma só está em dúvida.
+    """
+    p_s = sigmoid(D @ samples.T)  # (k, S)
+    scores: np.ndarray = _entropy(p_s.mean(axis=1)) - _entropy(p_s).mean(axis=1)
+    # Pela desigualdade de Jensen, nunca é negativo; o piso só retira erro de arredondamento.
+    floored: np.ndarray = np.maximum(scores, 0.0)
+    return floored
+
+
+def next_pair_bald(
+    Z: np.ndarray,
+    samples: np.ndarray,
+    shown: set[frozenset[int]],
+    rng: np.random.Generator,
+    k: int = 300,
+) -> tuple[int, int]:
+    """Sorteia até k pares não mostrados e devolve (esquerda, direita) do mais informativo."""
+    n_items = Z.shape[0]
+    first, second = np.triu_indices(n_items, k=1)
+
+    if shown:
+        shown_codes = [min(pair) * n_items + max(pair) for pair in shown]
+        keep = np.isin(first * n_items + second, shown_codes, invert=True)
+        first, second = first[keep], second[keep]
+    if first.size == 0:
+        raise ValueError("Não há par que ainda não tenha sido mostrado.")
+
+    drawn = rng.choice(first.size, size=min(k, first.size), replace=False)
+    first, second = first[drawn], second[drawn]
+    best = int(np.argmax(bald_scores(Z[first] - Z[second], samples)))
+
+    # O lado é sorteado para não haver viés de posição.
+    left, right = int(first[best]), int(second[best])
+    return (left, right) if rng.random() < 0.5 else (right, left)
