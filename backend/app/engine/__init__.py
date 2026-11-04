@@ -9,6 +9,7 @@ from app.engine.features import (
     raw_matrix,
     standardize,
 )
+from app.engine.pairs import random_pairs, seed_for
 
 __all__ = [
     "FEATURES",
@@ -16,6 +17,8 @@ __all__ = [
     "FeatureSpec",
     "ListingLike",
     "fit_stats",
+    "random_pairs",
     "raw_matrix",
+    "seed_for",
     "standardize",
 ]
