@@ -12,3 +12,4 @@ Uma decisão por linha, no formato: data · tarefa · decisão · motivo. Ningu�
 - 2026-11-03 · E01 · `frontend/src/features/collection`, `home` e `demo` não foram criadas · não constam da árvore da seção 3; as tarefas E08 e E11 as criam (a seção 8 prevalece).
 - 2026-11-03 · E01 · `docker-compose.yml`, `docs/results.md`, `docs/demo-script.md` e os arquivos de código da seção 3 não foram criados · a E01 cria só as pastas; esses arquivos pertencem a E02, A08, A09 e às demais tarefas.
 - 2026-11-03 · E01 · O remoto estava vazio, então `main` recebeu um commit raiz vazio antes da branch da E01 · um PR precisa de uma branch de destino com histórico comum.
+- 2026-11-03 · E01 · `CLAUDE.md` e `AGENTS.md` ficam como dois arquivos separados, sem symlink · decisão de João (Q1), seguindo o plano.
