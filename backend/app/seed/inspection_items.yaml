@@ -1,0 +1,25 @@
+# Itens da vistoria, com o ajuste sugerido no score (só com o corte C1 revertido).
+- key: noisy_street
+  label: Rua barulhenta
+  delta: -10
+- key: humidity
+  label: Umidade ou mofo
+  delta: -8
+- key: needs_renovation
+  label: Precisa de reforma
+  delta: -7
+- key: low_light
+  label: Pouca luz natural
+  delta: -5
+- key: good_light
+  label: Boa iluminação
+  delta: 5
+- key: quiet_neighborhood
+  label: Vizinhança tranquila
+  delta: 6
+- key: walkable_shops
+  label: Comércio a pé
+  delta: 5
+- key: nice_view
+  label: Vista bonita
+  delta: 4

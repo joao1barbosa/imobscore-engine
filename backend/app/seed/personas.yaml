@@ -1,0 +1,79 @@
+# Prioris das personas, na escala padronizada (seção 5.3).
+- slug: familia
+  name: Família
+  description: Prioriza espaço, quartos e vagas, mesmo pagando um pouco mais.
+  prior_mean:
+    log_price: -1.0
+    log_area: 0.8
+    bedrooms: 0.6
+    bedrooms_sq: -0.4
+    bathrooms: 0.4
+    parking: 0.5
+    dist_center: -0.3
+    age: -0.3
+    is_house: 0.5
+    leisure: 0.4
+    pet: 0.3
+    doorman: 0.4
+  prior_sd: &prior_sd
+    log_price: 1.0
+    log_area: 1.0
+    bedrooms: 1.0
+    bedrooms_sq: 1.0
+    bathrooms: 1.0
+    parking: 1.0
+    dist_center: 1.0
+    age: 1.0
+    is_house: 1.0
+    leisure: 1.0
+    pet: 1.0
+    doorman: 1.0
+  demo_defaults:
+    city: Goiânia
+    purpose: sale
+    price_min: 350000
+    price_max: 900000
+- slug: investidor
+  name: Investidor
+  description: Busca bom preço e localização, pensando em alugar ou revender.
+  prior_mean:
+    log_price: -1.5
+    log_area: 0.3
+    bedrooms: 0.2
+    bedrooms_sq: -0.2
+    bathrooms: 0.2
+    parking: 0.2
+    dist_center: -0.8
+    age: -0.5
+    is_house: -0.2
+    leisure: 0.3
+    pet: 0.0
+    doorman: 0.4
+  prior_sd: *prior_sd
+  demo_defaults:
+    city: Goiânia
+    purpose: sale
+    price_min: 200000
+    price_max: 600000
+- slug: estudante
+  name: Estudante
+  description: Quer pagar pouco e morar perto do centro.
+  prior_mean:
+    log_price: -2.0
+    log_area: 0.2
+    bedrooms: -0.2
+    bedrooms_sq: -0.3
+    bathrooms: 0.1
+    parking: 0.0
+    dist_center: -1.2
+    age: -0.1
+    is_house: -0.3
+    leisure: 0.2
+    pet: 0.2
+    doorman: 0.1
+  prior_sd: *prior_sd
+  demo_defaults:
+    city: Goiânia
+    purpose: sale
+    price_min: 150000
+    price_max: 350000
