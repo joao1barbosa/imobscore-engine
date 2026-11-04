@@ -18,8 +18,8 @@ class SessionCreate(BaseModel):
     mode: Mode = "product"
     city: str
     purpose: Purpose
-    price_min: Decimal = Field(gt=0)
-    price_max: Decimal = Field(gt=0)
+    price_min: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    price_max: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     persona_slug: PersonaSlug
     consent: bool = False
 

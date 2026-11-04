@@ -1,17 +1,26 @@
 """Testes dos pares da coleta: sorteio, retomada, respostas e fim da sessão."""
 
+import asyncio
+import contextlib
+import json
+import threading
 from collections import Counter
+from collections.abc import Iterator
 from typing import Any
 from uuid import uuid4
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, select, text
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
-from app.models import Comparison
-from app.services.seed_service import seed_database
+from app.deps import get_db
+from app.main import app
+from app.models import Comparison, SessionModel
+from app.services import pair_service
+from app.services.seed_service import seed_database, truncate_all
 
 
 @pytest.fixture
@@ -185,3 +194,108 @@ def test_resposta_sem_o_par_sido_mostrado_da_409(client: TestClient, seeded: Ses
 
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "pair_out_of_order"
+
+
+def test_preco_com_demais_digitos_da_422(client: TestClient, seeded: Session) -> None:
+    response = client.post("/api/v1/sessions", json=onboarding(price_min=1_234_567_890_123))
+
+    assert response.status_code == 422
+
+
+def test_preco_com_tres_casas_da_422(client: TestClient, seeded: Session) -> None:
+    response = client.post("/api/v1/sessions", json=onboarding(price_min="300000.123"))
+
+    assert response.status_code == 422
+
+
+def test_posicao_fora_do_intervalo_da_422(client: TestClient, seeded: Session) -> None:
+    session_id = start_session(client)
+
+    low = answer(client, session_id, 0)
+    high = answer(client, session_id, 40000)
+
+    assert low.status_code == 422
+    assert high.status_code == 422
+
+
+def test_next_pair_simultaneo_devolve_o_mesmo_par(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Seis pedidos ao mesmo tempo devolvem o mesmo par e uma linha só.
+
+    A fixture `db` tem uma só conexão, então o teste abre sessões reais do
+    banco de teste: o catálogo é semeado com commit e apagado no fim.
+
+    A checagem do par pendente passa por uma barreira: sem a trava da sessão,
+    os seis pedidos chegam juntos e tentam gravar o mesmo par, o que o banco
+    recusa.
+    """
+    settings = get_settings()
+    engine = create_engine(settings.test_database_url, pool_pre_ping=True)
+    factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    barreira = threading.Barrier(6, timeout=2.0)
+    original = pair_service.pending_comparison
+
+    def pending_comparison_com_barreira(db: Session, session: SessionModel) -> Comparison | None:
+        try:
+            barreira.wait()
+        except threading.BrokenBarrierError:
+            pass
+        return original(db, session)
+
+    monkeypatch.setattr(pair_service, "pending_comparison", pending_comparison_com_barreira)
+
+    def real_db() -> Iterator[Session]:
+        """Uma sessão por pedido, com a conexão devolvida à mão.
+
+        O `session.close()` do SQLAlchemy pode falhar quando o pedido leva
+        exceção, e a conexão ficaria com a transação aberta, prendendo a
+        limpeza do fim do teste.
+        """
+        connection = engine.connect()
+        session = factory(bind=connection)
+        try:
+            yield session
+        finally:
+            with contextlib.suppress(Exception):
+                connection.rollback()
+            with contextlib.suppress(Exception):
+                session.close()
+            with contextlib.suppress(Exception):
+                connection.close()
+
+    app.dependency_overrides[get_db] = real_db
+    try:
+        with factory() as setup:
+            seed_database(setup, settings)
+            setup.commit()
+
+        with TestClient(app) as test_client:
+            created = test_client.post("/api/v1/sessions", json=onboarding())
+            assert created.status_code == 201
+            session_id = created.json()["id"]
+
+        async def fetch_all() -> list[httpx.Response]:
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+                return await asyncio.gather(
+                    *[ac.get(f"/api/v1/sessions/{session_id}/next-pair") for _ in range(6)]
+                )
+
+        responses = asyncio.run(fetch_all())
+
+        assert [response.status_code for response in responses] == [200] * 6
+        bodies = {json.dumps(response.json(), sort_keys=True) for response in responses}
+        assert len(bodies) == 1
+
+        with factory() as check:
+            comparisons = check.scalars(
+                select(Comparison).where(Comparison.session_id == session_id)
+            ).all()
+            assert len(comparisons) == 1
+            assert comparisons[0].position == 1
+    finally:
+        app.dependency_overrides.clear()
+        with factory() as cleanup:
+            cleanup.execute(text("SET lock_timeout = '10s'"))
+            truncate_all(cleanup)
+            cleanup.commit()
+        engine.dispose()

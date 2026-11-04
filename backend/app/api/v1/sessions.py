@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Path, Response, status
 from sqlalchemy.orm import Session
 
 from app.deps import get_db, get_session_or_404
@@ -55,6 +55,8 @@ def next_pair(
             "Os pares adaptativos chegam na próxima etapa.",
         )
 
+    db.refresh(session, with_for_update=True)
+
     if session.status == "done":
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -73,12 +75,13 @@ def next_pair(
 @router.post("/sessions/{session_id}/comparisons/{position}", response_model=AnswerOut)
 def answer_pair(
     session_id: UUID,
-    position: int,
+    position: Annotated[int, Path(ge=1, le=32767)],
     payload: AnswerIn,
     db: Annotated[Session, Depends(get_db)],
     session: Annotated[SessionModel, Depends(get_session_or_404)],
 ) -> AnswerOut:
     """Registra a escolha da pessoa."""
+    db.refresh(session, with_for_update=True)
     result = pair_service.record_answer(db, session, position, payload)
     db.commit()
     return result
