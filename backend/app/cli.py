@@ -34,13 +34,13 @@ def seed(
     """Recria catálogo, personas e estatísticas de padronização."""
     settings = get_settings()
     with SessionLocal() as session:
-        if not force and count_sessions(session) > 0:
-            typer.echo("Existem sessões; use --force para apagar tudo", err=True)
-            raise typer.Exit(code=1)
-
         if if_empty and count_listings(session) > 0:
             typer.echo("O catálogo já tem imóveis; nada foi recriado.")
         else:
+            if not force and count_sessions(session) > 0:
+                typer.echo("Existem sessões; use --force para apagar tudo", err=True)
+                raise typer.Exit(code=1)
+
             stats = seed_database(session, settings)
             session.commit()
             typer.echo(

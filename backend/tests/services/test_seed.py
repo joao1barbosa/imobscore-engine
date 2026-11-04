@@ -1,6 +1,7 @@
 """Testes do seed: catálogo, personas, estatísticas e reprodutibilidade."""
 
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -159,6 +160,33 @@ def test_seed_com_if_empty_nao_recria_o_catalogo(cli: CliRunner, session: Sessio
 
     assert result.exit_code == 0
     assert listings_snapshot(session) == before
+
+
+def test_seed_com_if_empty_ignora_sessoes_existentes(cli: CliRunner, session: Session) -> None:
+    seed_database(session, get_settings())
+    session.commit()
+    session.add(
+        SessionModel(
+            mode="collection",
+            city="Goiânia",
+            purpose="sale",
+            price_min=Decimal("100000.00"),
+            price_max=Decimal("500000.00"),
+            persona_slug="familia",
+            target_pairs=25,
+            participant_code="P01",
+            consent_at=datetime.now(UTC),
+        )
+    )
+    session.commit()
+    before = listings_snapshot(session)
+
+    result = cli.invoke(app, ["seed", "--if-empty"])
+
+    assert result.exit_code == 0
+    assert "O catálogo já tem imóveis; nada foi recriado." in result.output
+    assert listings_snapshot(session) == before
+    assert count(session, SessionModel) == 1
 
 
 def test_load_results_carrega_o_csv_e_ignora_o_run_id_repetido(
