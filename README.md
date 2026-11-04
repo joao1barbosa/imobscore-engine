@@ -36,11 +36,7 @@ make tunnel
 
 O comando imprime um endereço `https://....trycloudflare.com`. Esse é o link da coleta: todos os colegas usam o mesmo endereço.
 
-Se a rede bloquear o QUIC (UDP 7844), o túnel não conecta e o `cloudflared` avisa "Allow outbound QUIC traffic on port 7844". Nesse caso, rode com HTTP/2:
-
-```bash
-cloudflared tunnel --url http://localhost:8080 --protocol http2
-```
+O alvo usa HTTP/2, porque algumas redes bloqueiam o QUIC (UDP 7844) e o túnel não conectaria. O endereço só existe enquanto o comando estiver rodando: durante a coleta, o notebook precisa ficar ligado, sem suspender, com o Docker e o túnel no ar. Se o túnel cair, o comando gera outro endereço, e o link enviado aos colegas para de funcionar.
 
 **Rode `make seed` uma última vez antes de enviar o link**, para apagar as sessões de teste que ficaram no banco; sem isso, um teste completo entraria na avaliação como se fosse a participação de alguém. **Depois de enviar o link, nunca mais rode `make seed`**, porque ele apaga as respostas dos colegas.
 

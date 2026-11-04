@@ -31,6 +31,6 @@ evaluate: ## exporta, avalia e carrega os resultados no banco
 	$(API) evaluate --from-json data/collected/pairs.json --out data/results
 	$(API) load-results data/results/results.csv
 tunnel:   ## expõe a porta 8080 para a coleta
-	cloudflared tunnel --url http://localhost:8080
+	cloudflared tunnel --url http://localhost:8080 --protocol http2
 reset:    ## apaga o banco (pede confirmação)
 	@read -p "Apagar o banco? [s/N] " r && [ "$$r" = "s" ] && docker compose down -v

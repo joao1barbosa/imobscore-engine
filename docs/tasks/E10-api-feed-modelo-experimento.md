@@ -348,7 +348,7 @@ from app.engine.features import (
     FEATURES, FEATURE_KEYS, FeatureSpec, ListingLike, raw_matrix, fit_stats, standardize,
 )
 from app.engine.mcmc import MCMCConfig, MCMCResult, fit_posterior
-from app.engine.diagnostics import Diagnostics
+from app.engine.diagnostics import Diagnostics, is_ok
 from app.engine.affinity import AffinityResult, Reason, compute_affinity, to_score, explain
 from app.engine.pairs import seed_for, random_pairs, next_pair_bald
 from app.engine.baselines import Method, fit_mle, predict_proba
@@ -394,6 +394,8 @@ def fit_posterior(D: np.ndarray, mu: np.ndarray, sd: np.ndarray, seed: int,
 class Diagnostics:
     accept_rate: float; rhat_max: float; ess_min: float
     step_size: float; elapsed_ms: int; ok: bool   # mesmos nomes do schema Diagnostics da seção 6
+def is_ok(accept_rate: float, rhat_max: float, ess_min: float) -> bool: ...
+# critério da seção 5.5; `posteriors` não guarda `ok`, então o serviço recalcula ao carregar a linha
 
 # ---------- affinity.py ----------
 @dataclass(frozen=True)

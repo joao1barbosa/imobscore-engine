@@ -1,14 +1,26 @@
 """Comandos do ImobScore, rodados com `python -m app.cli`."""
 
+import json
 from pathlib import Path
 from typing import Annotated
+from uuid import uuid4
 
+import numpy as np
 import typer
 
+from app.analysis.report import format_summary, read_pairs, write_report
+from app.analysis.simulation import build_simulated_export
 from app.config import get_settings
 from app.db import SessionLocal
+from app.engine import FEATURE_KEYS, MCMCConfig, ResultRow, evaluate_participant
 from app.services.export_service import ExportError, write_export
-from app.services.seed_service import count_listings, count_sessions, load_results, seed_database
+from app.services.seed_service import (
+    count_listings,
+    count_sessions,
+    load_personas,
+    load_results,
+    seed_database,
+)
 
 # No contêiner, a aplicação está em /app e os dados em /app/data; na máquina
 # local, a aplicação está em backend/ e os dados em data/, na raiz do repositório.
@@ -77,6 +89,64 @@ def export(
     if total == 0:
         typer.echo("Nenhuma sessão da coleta com os 25 pares respondidos.")
     typer.echo(f"Exportados {total} participantes para {out}.")
+
+
+@app.command()
+def simulate(
+    participants: Annotated[
+        int, typer.Option("--participants", help="Quantos participantes.")
+    ] = 10,
+    out: Annotated[
+        Path, typer.Option("--out", help="Arquivo JSON onde os pares são gravados.")
+    ] = DATA_DIR / "collected" / "pairs_simulated.json",
+) -> None:
+    """Cria participantes sintéticos (S01, S02...), no formato do export."""
+    with SessionLocal() as session:
+        payload = build_simulated_export(session, participants)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    typer.echo(f"Simulados {participants} participantes em {out}.")
+
+
+@app.command()
+def evaluate(
+    from_json: Annotated[
+        Path, typer.Option("--from-json", help="Arquivo JSON do export ou da simulação.")
+    ],
+    out: Annotated[
+        Path, typer.Option("--out", help="Pasta dos resultados e das figuras.")
+    ] = DATA_DIR / "results",
+) -> None:
+    """Avalia os métodos em pares nunca vistos e grava CSVs e figuras. Não usa o banco."""
+    settings = get_settings()
+    cfg = MCMCConfig(
+        chains=settings.mcmc_chains,
+        warmup=settings.mcmc_warmup,
+        draws=settings.mcmc_draws,
+        thin=settings.mcmc_thin,
+    )
+    personas = {persona.slug: persona for persona in load_personas()}
+    participants = read_pairs(from_json)
+    if not participants:
+        typer.echo(f"Nenhum participante em {from_json}.", err=True)
+        raise typer.Exit(code=1)
+
+    rows: list[ResultRow] = []
+    for participant in participants:
+        typer.echo(f"Avaliando {participant.participant_code}...")
+        persona = personas[participant.persona_slug]
+        rows += evaluate_participant(
+            participant.participant_code,
+            participant.D,
+            np.array([persona.prior_mean[key] for key in FEATURE_KEYS]),
+            np.array([persona.prior_sd[key] for key in FEATURE_KEYS]),
+            cfg=cfg,
+        )
+
+    run_id = uuid4()
+    summary = write_report(rows, run_id, out)
+    typer.echo(format_summary(summary))
+    typer.echo(f"Rodada {run_id}: resultados e figuras em {out}.")
 
 
 if __name__ == "__main__":
