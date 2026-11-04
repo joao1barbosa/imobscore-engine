@@ -31,6 +31,13 @@ Protocolo na seção 1.4 de `docs/PLAN.md`. Cada registro traz data, módulo, pe
 
 ## CP4 · Afinidade, BALD e baselines (A06) · sex 06/11
 
+- **Data:** 2026-11-04. **Módulo:** `backend/app/engine/affinity.py`, `backend/app/engine/baselines.py` e `next_pair_bald` em `backend/app/engine/pairs.py`. **Guia:** seções 6.4 e 10.
+- **O que o score de 87 quer dizer?** Resposta parcial: a probabilidade de o usuário escolher aquele imóvel. Claude completou: 87% de chance de preferir este imóvel a um imóvel típico (z = 0), como média entre os 4.000 gostos plausíveis, o que não é previsão de compra.
+- **Por que a média das sigmoides e não a sigmoide da média?** João não sabia e pediu a explicação, com exemplo numérico. Depois, respondeu certo que a outra conta ignora a incerteza, mas errou o caso de amostras quase iguais: disse que as contas dariam resultados diferentes, e elas dão praticamente o mesmo. Claude corrigiu com números e acrescentou que o exagero da sigmoide da média vai para os dois lados, para longe de 50%.
+- **E se a regressão logística não tivesse regularização?** Resposta parcial: com 3 pares faltam dados e os pesos saem do controle; a regularização segura isso, mas João disse "regressão linear" e "normaliza". Claude corrigiu os termos e mostrou que os pesos vão para o infinito em dados separáveis, que a penalidade cria um ponto ótimo e que ela equivale ao MAP com priori normal.
+- **Dúvidas respondidas:** a média das sigmoides. Para a banca, João deve rever as seções 6.4 e 10 do guia, porque nenhuma resposta saiu completa de primeira. Claude ofereceu refazer as perguntas, e João preferiu fechar o checkpoint.
+- **Entendido: sim**
+
 ## CP5 · Integração motor e API (A-REV2) · sáb 07/11
 
 ## CP6 · Experimento real (A08) · dom 08/11
