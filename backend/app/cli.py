@@ -1,5 +1,6 @@
 """Comandos do ImobScore, rodados com `python -m app.cli`."""
 
+import csv
 import json
 from pathlib import Path
 from typing import Annotated
@@ -89,6 +90,38 @@ def export(
     if total == 0:
         typer.echo("Nenhuma sessão da coleta com os 25 pares respondidos.")
     typer.echo(f"Exportados {total} participantes para {out}.")
+
+
+@app.command("load-results")
+def load_results_command(
+    csv_path: Annotated[Path, typer.Argument(help="Arquivo CSV de resultados.")],
+) -> None:
+    """Carrega as linhas de resultados do experimento em `experiment_results`.
+
+    Se a rodada do arquivo já estiver no banco, nada é inserido e o comando avisa.
+    """
+    if not csv_path.exists():
+        typer.echo(f"Arquivo não encontrado: {csv_path}", err=True)
+        raise typer.Exit(code=1)
+
+    run_ids = _csv_run_ids(csv_path)
+    with SessionLocal() as session:
+        inserted = load_results(session, csv_path)
+        session.commit()
+
+    if inserted:
+        typer.echo(f"Resultados: {inserted} linhas de {csv_path.name}.")
+        return
+    if not run_ids:
+        typer.echo(f"O arquivo {csv_path.name} está vazio.")
+        return
+    typer.echo(f"A rodada {run_ids[0]} já está no banco; nada foi inserido.", err=True)
+
+
+def _csv_run_ids(path: Path) -> list[str]:
+    """As rodadas do CSV, para avisar quando a rodada já está no banco."""
+    with path.open(newline="", encoding="utf-8") as handle:
+        return [row["run_id"] for row in csv.DictReader(handle)]
 
 
 @app.command()

@@ -14,7 +14,7 @@ from typer.testing import CliRunner
 from app.cli import app
 from app.config import get_settings
 from app.models import ExperimentResult, FeatureStat, Listing, Persona, SessionModel
-from app.services.seed_service import load_results, seed_database
+from app.services.seed_service import load_results, seed_database, truncate_all
 
 
 @pytest.fixture
@@ -24,6 +24,18 @@ def engine() -> Iterator[Engine]:
     test_engine: Engine = create_engine(settings.test_database_url, pool_pre_ping=True)
     yield test_engine
     test_engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def clean_database(engine: Engine) -> Iterator[None]:
+    """Esvazia as tabelas no fim de cada teste.
+
+    O seed grava o catálogo com commit, e ele não pode ficar para o teste
+    seguinte, que espera o banco vazio.
+    """
+    yield
+    with engine.begin() as connection:
+        truncate_all(connection)
 
 
 @pytest.fixture

@@ -163,13 +163,16 @@ def test_sessao_terminada_recusa_nova_resposta(client: TestClient, seeded: Sessi
     assert response.json()["detail"]["code"] == "session_done"
 
 
-def test_modo_demo_nao_tem_par_ainda(client: TestClient, seeded: Session) -> None:
+def test_modo_demo_devolve_o_par_adaptativo(client: TestClient, seeded: Session) -> None:
     created = client.post("/api/v1/sessions", json=onboarding(mode="demo", consent=False)).json()
 
     response = client.get(f"/api/v1/sessions/{created['id']}/next-pair")
 
-    assert response.status_code == 501
-    assert response.json()["detail"]["code"] == "not_available"
+    assert response.status_code == 200
+    body = response.json()
+    assert body["position"] == 1
+    assert body["total"] == 3
+    assert body["listing_a"]["id"] != body["listing_b"]["id"]
 
 
 def test_sessao_inexistente_da_404(client: TestClient, seeded: Session) -> None:

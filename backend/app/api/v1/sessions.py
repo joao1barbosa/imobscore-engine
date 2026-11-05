@@ -7,11 +7,10 @@ from fastapi import APIRouter, Depends, Path, Response, status
 from sqlalchemy.orm import Session
 
 from app.deps import get_db, get_session_or_404
-from app.errors import ApiError
 from app.models import SessionModel
 from app.schemas.pair import AnswerIn, AnswerOut, PairOut
 from app.schemas.session import SessionCreate, SessionOut
-from app.services import pair_service, session_service
+from app.services import pair_service, posterior_service, session_service
 
 router = APIRouter()
 
@@ -43,18 +42,12 @@ def next_pair(
     db: Annotated[Session, Depends(get_db)],
     session: Annotated[SessionModel, Depends(get_session_or_404)],
 ) -> PairOut | Response:
-    """O par pendente da coleta, ou 204 quando a sessão acabou.
+    """O par pendente da sessão, ou 204 quando a sessão acabou.
 
     Recarregar a página devolve o mesmo par: o par pendente é devolvido em vez
-    de criar outro.
+    de criar outro. Na coleta o par é sorteado ao acaso; nos outros modos, é
+    escolhido por informação, com a posteriori atual.
     """
-    if session.mode != "collection":
-        raise ApiError(
-            501,
-            "not_available",
-            "Os pares adaptativos chegam na próxima etapa.",
-        )
-
     db.refresh(session, with_for_update=True)
 
     if session.status == "done":
@@ -80,8 +73,17 @@ def answer_pair(
     db: Annotated[Session, Depends(get_db)],
     session: Annotated[SessionModel, Depends(get_session_or_404)],
 ) -> AnswerOut:
-    """Registra a escolha da pessoa."""
+    """Registra a escolha da pessoa.
+
+    Fora do modo coleta, a posteriori é recalculada e os diagnósticos do MCMC
+    voltam na resposta.
+    """
     db.refresh(session, with_for_update=True)
     result = pair_service.record_answer(db, session, position, payload)
+
+    if session.mode != "collection":
+        fit = posterior_service.get_or_fit(db, session, result.answered)
+        result.diagnostics = posterior_service.diagnostics_out(fit.diagnostics)
+
     db.commit()
     return result

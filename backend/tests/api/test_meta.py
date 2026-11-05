@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.engine import FEATURE_KEYS
 from app.models import Listing
 from app.services.seed_service import seed_database
 
@@ -55,3 +56,30 @@ def test_meta_sem_catalogo_devolve_lista_vazia(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json() == {"segments": []}
+
+
+def test_meta_features_devolve_as_doze_caracteristicas(client: TestClient) -> None:
+    response = client.get("/api/v1/meta/features")
+
+    assert response.status_code == 200
+    features = response.json()
+    assert len(features) == 12
+    assert [feature["key"] for feature in features] == list(FEATURE_KEYS)
+    for feature in features:
+        assert set(feature) == {"key", "label", "text_high", "text_low"}
+        assert feature["label"]
+        assert feature["text_high"]
+        assert feature["text_low"]
+
+
+def test_meta_inspection_items_devolve_os_itens_da_vistoria(client: TestClient) -> None:
+    response = client.get("/api/v1/meta/inspection-items")
+
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) == 8
+    for item in items:
+        assert set(item) == {"key", "label", "delta"}
+        assert item["key"]
+        assert item["label"]
+        assert isinstance(item["delta"], int)

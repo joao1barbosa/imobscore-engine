@@ -1,4 +1,4 @@
-"""Serviço de pares: sorteio da coleta e registro das respostas."""
+"""Serviço de pares: sorteio da coleta, escolha adaptativa e registro das respostas."""
 
 from datetime import UTC, datetime
 
@@ -6,14 +6,18 @@ import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.engine import random_pairs, seed_for
+from app.engine import next_pair_bald, random_pairs, seed_for
 from app.errors import ApiError
 from app.models import Comparison, Listing, SessionModel
 from app.schemas.pair import AnswerIn, AnswerOut, PairOut
 from app.services.listing_service import candidate_listings, listing_card
+from app.services.posterior_service import get_or_fit, standardized
 from app.services.session_service import answered_count
 
 COLLECTION_SELECTION = "random"
+ADAPTIVE_SELECTION = "adaptive"
+# A semente do par adaptativo vem do número de pares respondidos, com esta base.
+ADAPTIVE_SEED_BASE = 10_000
 
 
 def collection_pairs(db: Session, session: SessionModel) -> list[tuple[Listing, Listing]]:
@@ -31,6 +35,38 @@ def collection_pairs(db: Session, session: SessionModel) -> list[tuple[Listing, 
     return [(candidates[first], candidates[second]) for first, second in pairs]
 
 
+def shown_pairs(
+    db: Session, session: SessionModel, candidates: list[Listing]
+) -> set[frozenset[int]]:
+    """Os pares já mostrados, em índices dos candidatos."""
+    index = {listing.id: position for position, listing in enumerate(candidates)}
+    shown: set[frozenset[int]] = set()
+    comparisons = db.scalars(select(Comparison).where(Comparison.session_id == session.id)).all()
+    for comparison in comparisons:
+        first = index.get(comparison.listing_a_id)
+        second = index.get(comparison.listing_b_id)
+        if first is not None and second is not None:
+            shown.add(frozenset((first, second)))
+    return shown
+
+
+def adaptive_pair(db: Session, session: SessionModel) -> tuple[Listing, Listing]:
+    """O próximo par por informação (BALD), nos modos demo e product.
+
+    O par é escolhido entre os candidatos, com a posteriori atual, e nunca
+    repete um par que já foi mostrado.
+    """
+    candidates = candidate_listings(db, session)
+    z = standardized(db, session, candidates)
+    answered = answered_count(db, session)
+    samples = get_or_fit(db, session, answered).samples
+    shown = shown_pairs(db, session, candidates)
+
+    rng = np.random.default_rng(seed_for(session.id, ADAPTIVE_SEED_BASE + answered))
+    first, second = next_pair_bald(z, samples, shown, rng)
+    return candidates[first], candidates[second]
+
+
 def pending_comparison(db: Session, session: SessionModel) -> Comparison | None:
     """O par mostrado e ainda não respondido, se houver."""
     return db.scalar(
@@ -42,15 +78,25 @@ def pending_comparison(db: Session, session: SessionModel) -> Comparison | None:
 
 
 def create_next_comparison(db: Session, session: SessionModel) -> Comparison:
-    """Grava o próximo par da coleta, na posição que falta."""
+    """Grava o próximo par, na posição que falta.
+
+    Na coleta o par é sorteado ao acaso; nos outros modos, é escolhido por
+    informação (BALD), com a posteriori do momento.
+    """
     position = answered_count(db, session) + 1
-    listing_a, listing_b = collection_pairs(db, session)[position - 1]
+    if session.mode == "collection":
+        listing_a, listing_b = collection_pairs(db, session)[position - 1]
+        selection = COLLECTION_SELECTION
+    else:
+        listing_a, listing_b = adaptive_pair(db, session)
+        selection = ADAPTIVE_SELECTION
+
     comparison = Comparison(
         session_id=session.id,
         position=position,
         listing_a_id=listing_a.id,
         listing_b_id=listing_b.id,
-        selection=COLLECTION_SELECTION,
+        selection=selection,
     )
     db.add(comparison)
     db.flush()

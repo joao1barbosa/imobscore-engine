@@ -1,17 +1,25 @@
-"""Rotas de metadados: os segmentos do catálogo e as personas."""
+"""Rotas de metadados: os segmentos do catálogo, as personas e as características."""
 
+from functools import lru_cache
+from pathlib import Path
 from typing import Annotated
 
+import yaml
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.deps import get_db
+from app.engine import FEATURES
 from app.models import Listing, Persona
+from app.schemas.feed import FeatureOut, InspectionItemOut
 from app.schemas.meta import DemoDefaults, MetaOptions, PersonaOut, SegmentOptions
 from app.services.seed_service import load_personas
 
 router = APIRouter()
+
+# Os itens da vistoria vêm do arquivo do arquiteto, em `app/seed`.
+INSPECTION_ITEMS_PATH = Path(__file__).resolve().parents[2] / "seed" / "inspection_items.yaml"
 
 
 @router.get("/meta/options", response_model=MetaOptions)
@@ -66,3 +74,37 @@ def meta_personas(db: Annotated[Session, Depends(get_db)]) -> list[PersonaOut]:
         )
         for persona in ordered
     ]
+
+
+@router.get("/meta/features", response_model=list[FeatureOut])
+def meta_features() -> list[FeatureOut]:
+    """As doze características, com o rótulo e os textos dos motivos."""
+    return [
+        FeatureOut(
+            key=feature.key,
+            label=feature.label,
+            text_high=feature.text_high,
+            text_low=feature.text_low,
+        )
+        for feature in FEATURES
+    ]
+
+
+@router.get("/meta/inspection-items", response_model=list[InspectionItemOut])
+def meta_inspection_items() -> list[InspectionItemOut]:
+    """Os itens da vistoria, com o ajuste sugerido no score."""
+    return list(load_inspection_items())
+
+
+@lru_cache
+def load_inspection_items() -> tuple[InspectionItemOut, ...]:
+    """Lê os itens da vistoria do arquivo do arquiteto."""
+    raw = yaml.safe_load(INSPECTION_ITEMS_PATH.read_text(encoding="utf-8"))
+    return tuple(
+        InspectionItemOut(
+            key=str(item["key"]),
+            label=str(item["label"]),
+            delta=int(item["delta"]),
+        )
+        for item in raw
+    )
