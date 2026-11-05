@@ -11,6 +11,10 @@ import {
   type SessionCreate,
   type SessionOut,
 } from "./client";
+import type { components } from "./schema";
+
+export type FeedItem = components["schemas"]["FeedItem"];
+export type FeedPage = components["schemas"]["FeedPage"];
 
 /** As faixas de preço do catálogo. Não mudam durante a sessão. */
 export const metaOptionsQuery = queryOptions({
@@ -75,6 +79,36 @@ export const pairQuery = (sessionId: string) =>
         throw toApiError(response.status, error);
       }
       return data;
+    },
+  });
+
+/**
+ * O feed da sessão: o ranking de afinidade, com o número de pares levados em
+ * conta (`at=0` é só a priori). O front-end usa só a primeira página.
+ */
+export const feedQuery = (
+  sessionId: string,
+  at: number,
+  method: "bayes" | "persona" = "bayes",
+) =>
+  queryOptions({
+    queryKey: ["feed", sessionId, method, at],
+    queryFn: async (): Promise<FeedPage> => {
+      const { data, error, response } = await client.GET(
+        "/sessions/{session_id}/feed",
+        {
+          params: {
+            path: { session_id: sessionId },
+            query: { method, at, limit: 30 },
+          },
+        },
+      );
+      if (data === undefined) {
+        throw toApiError(response.status, error);
+      }
+      // O `openapi-fetch` achata a tupla do intervalo em lista; a API sempre
+      // devolve os dois percentis.
+      return data as FeedPage;
     },
   });
 

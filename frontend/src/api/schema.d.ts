@@ -66,6 +66,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/meta/features": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Meta Features
+     * @description As doze características, com o rótulo e os textos dos motivos.
+     */
+    get: operations["meta_features_api_v1_meta_features_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/meta/inspection-items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Meta Inspection Items
+     * @description Os itens da vistoria, com o ajuste sugerido no score.
+     */
+    get: operations["meta_inspection_items_api_v1_meta_inspection_items_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/sessions": {
     parameters: {
       query?: never;
@@ -115,10 +155,11 @@ export interface paths {
     };
     /**
      * Next Pair
-     * @description O par pendente da coleta, ou 204 quando a sessão acabou.
+     * @description O par pendente da sessão, ou 204 quando a sessão acabou.
      *
      *     Recarregar a página devolve o mesmo par: o par pendente é devolvido em vez
-     *     de criar outro.
+     *     de criar outro. Na coleta o par é sorteado ao acaso; nos outros modos, é
+     *     escolhido por informação, com a posteriori atual.
      */
     get: operations["next_pair_api_v1_sessions__session_id__next_pair_get"];
     put?: never;
@@ -141,8 +182,94 @@ export interface paths {
     /**
      * Answer Pair
      * @description Registra a escolha da pessoa.
+     *
+     *     Fora do modo coleta, a posteriori é recalculada e os diagnósticos do MCMC
+     *     voltam na resposta.
      */
     post: operations["answer_pair_api_v1_sessions__session_id__comparisons__position__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/feed": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Feed
+     * @description O feed de imóveis, com a afinidade da sessão.
+     *
+     *     Com `at=N`, o feed é calculado com os N primeiros pares respondidos; sem
+     *     ele, com todos os pares respondidos até agora.
+     */
+    get: operations["feed_api_v1_sessions__session_id__feed_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/posterior": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Posterior
+     * @description Os doze pesos da posteriori, com a priori da persona e os diagnósticos.
+     */
+    get: operations["posterior_api_v1_sessions__session_id__posterior_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/posterior/trace": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Posterior Trace
+     * @description O traço das quatro primeiras cadeias de um peso.
+     */
+    get: operations["posterior_trace_api_v1_sessions__session_id__posterior_trace_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/experiment/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Experiment Summary
+     * @description As métricas agregadas da última rodada, ou da rodada pedida.
+     */
+    get: operations["experiment_summary_api_v1_experiment_summary_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -213,10 +340,111 @@ export interface components {
       /** Ok */
       ok: boolean;
     };
+    /**
+     * ExperimentRow
+     * @description A média e o desvio de um método, com um número de pares de treino.
+     */
+    ExperimentRow: {
+      /**
+       * Method
+       * @enum {string}
+       */
+      method: "equal" | "persona" | "mle" | "bayes";
+      /** N Train */
+      n_train: number;
+      /** Acc Mean */
+      acc_mean: number;
+      /** Acc Sd */
+      acc_sd: number;
+      /** Ll Mean */
+      ll_mean: number;
+      /** Ll Sd */
+      ll_sd: number;
+      /** N Participants */
+      n_participants: number;
+    };
+    /**
+     * ExperimentSummary
+     * @description O resumo de uma rodada do experimento.
+     */
+    ExperimentSummary: {
+      /** Run Id */
+      run_id: string | null;
+      /** Simulated */
+      simulated: boolean;
+      /** Participants */
+      participants: number;
+      /** Rows */
+      rows: components["schemas"]["ExperimentRow"][];
+      /** Per Participant */
+      per_participant: components["schemas"]["ParticipantRow"][];
+    };
+    /**
+     * FeatureOut
+     * @description Uma característica do motor, com o texto para o cartão do imóvel.
+     */
+    FeatureOut: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Text High */
+      text_high: string;
+      /** Text Low */
+      text_low: string;
+    };
+    /**
+     * FeedItem
+     * @description Um imóvel do feed, com o score e o intervalo de afinidade.
+     */
+    FeedItem: {
+      listing: components["schemas"]["ListingCard"];
+      /** Score */
+      score: number;
+      /** Affinity Pct */
+      affinity_pct: number;
+      /** Interval */
+      interval: [number, number];
+      /** Inspection Delta */
+      inspection_delta: number;
+      /** Reasons */
+      reasons: components["schemas"]["Reason"][];
+      /** Rank */
+      rank: number;
+    };
+    /**
+     * FeedPage
+     * @description Uma página do feed da sessão.
+     */
+    FeedPage: {
+      /** Items */
+      items: components["schemas"]["FeedItem"][];
+      /** Next Offset */
+      next_offset: number | null;
+      /**
+       * Method
+       * @enum {string}
+       */
+      method: "bayes" | "persona";
+      /** N Comparisons */
+      n_comparisons: number;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
+    };
+    /**
+     * InspectionItemOut
+     * @description Um item da vistoria, com o ajuste sugerido no score.
+     */
+    InspectionItemOut: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Delta */
+      delta: number;
     };
     /**
      * ListingCard
@@ -284,6 +512,18 @@ export interface components {
       listing_b: components["schemas"]["ListingCard"];
     };
     /**
+     * ParticipantRow
+     * @description A acurácia média de um participante, com um método.
+     */
+    ParticipantRow: {
+      /** Participant Code */
+      participant_code: string;
+      /** Method */
+      method: string;
+      /** Acc Mean */
+      acc_mean: number;
+    };
+    /**
      * PersonaOut
      * @description Uma persona, sem os pesos da priori.
      */
@@ -295,6 +535,29 @@ export interface components {
       /** Description */
       description: string;
       demo_defaults: components["schemas"]["DemoDefaults"];
+    };
+    /**
+     * PosteriorOut
+     * @description A posteriori da sessão, com os doze pesos e o diagnóstico do MCMC.
+     */
+    PosteriorOut: {
+      /** N Comparisons */
+      n_comparisons: number;
+      /** Weights */
+      weights: components["schemas"]["WeightOut"][];
+      diagnostics: components["schemas"]["Diagnostics"];
+    };
+    /**
+     * Reason
+     * @description Um motivo do imóvel, com a característica e a contribuição.
+     */
+    Reason: {
+      /** Feature Key */
+      feature_key: string;
+      /** Text */
+      text: string;
+      /** Contribution */
+      contribution: number;
     };
     /**
      * SegmentOptions
@@ -375,6 +638,16 @@ export interface components {
        */
       status: "comparing" | "done";
     };
+    /**
+     * TraceOut
+     * @description O traço das primeiras cadeias de um peso.
+     */
+    TraceOut: {
+      /** Feature Key */
+      feature_key: string;
+      /** Chains */
+      chains: number[][];
+    };
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -387,6 +660,28 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /**
+     * WeightOut
+     * @description Um peso da posteriori: a priori da persona e o que os pares responderam.
+     */
+    WeightOut: {
+      /** Feature Key */
+      feature_key: string;
+      /** Label */
+      label: string;
+      /** Prior Mean */
+      prior_mean: number;
+      /** Prior Sd */
+      prior_sd: number;
+      /** Post Mean */
+      post_mean: number;
+      /** Post Sd */
+      post_sd: number;
+      /** Ci Low */
+      ci_low: number;
+      /** Ci High */
+      ci_high: number;
     };
   };
   responses: never;
@@ -455,6 +750,46 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PersonaOut"][];
+        };
+      };
+    };
+  };
+  meta_features_api_v1_meta_features_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeatureOut"][];
+        };
+      };
+    };
+  };
+  meta_inspection_items_api_v1_meta_inspection_items_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InspectionItemOut"][];
         };
       };
     };
@@ -577,6 +912,142 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnswerOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  feed_api_v1_sessions__session_id__feed_get: {
+    parameters: {
+      query?: {
+        method?: "bayes" | "persona";
+        at?: number | null;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  posterior_api_v1_sessions__session_id__posterior_get: {
+    parameters: {
+      query?: {
+        n?: number | null;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PosteriorOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  posterior_trace_api_v1_sessions__session_id__posterior_trace_get: {
+    parameters: {
+      query: {
+        /** @description Chave da característica. */
+        feature: string;
+        n?: number | null;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TraceOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  experiment_summary_api_v1_experiment_summary_get: {
+    parameters: {
+      query?: {
+        /** @description Rodada pedida. */
+        run_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExperimentSummary"];
         };
       };
       /** @description Validation Error */

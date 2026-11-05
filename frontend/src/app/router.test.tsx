@@ -54,17 +54,31 @@ describe("rotas do app", () => {
   it("com sessão, uma tela protegida mostra a tela", () => {
     useSessionStore.setState({ sessionId: SESSION_ID, mode: "product" });
 
-    renderRoute("/feed");
+    renderRoute("/modelo");
 
-    expect(screen.getByRole("heading", { name: "/feed" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "/modelo" }),
+    ).toBeInTheDocument();
   });
 
-  it("monta o app inteiro, com os providers, em /feed", () => {
+  it("com sessão, o feed abre o ranking", async () => {
     useSessionStore.setState({ sessionId: SESSION_ID, mode: "product" });
-    window.history.pushState({}, "", "/feed");
+
+    renderRoute("/feed");
+
+    expect(
+      await screen.findByRole("heading", { name: copy.feed.title }),
+    ).toBeInTheDocument();
+  });
+
+  it("monta o app inteiro, com os providers, em /modelo", () => {
+    useSessionStore.setState({ sessionId: SESSION_ID, mode: "product" });
+    window.history.pushState({}, "", "/modelo");
 
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: "/feed" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "/modelo" }),
+    ).toBeInTheDocument();
   });
 });

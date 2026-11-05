@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { CollectionPage } from "@/features/collection/collection-page";
+import { ComparePage } from "@/features/compare/compare-page";
 import { DemoPage } from "@/features/demo/demo-page";
+import { FeedPage } from "@/features/feed/feed-page";
 import { HomePage } from "@/features/home/home-page";
 import { OnboardingPage } from "@/features/onboarding/onboarding-page";
 import { useSessionStore } from "@/stores/session-store";
@@ -13,11 +15,14 @@ const ROUTE_HOME = "/";
 const ROUTE_COLLECTION = "/coleta";
 const ROUTE_ONBOARDING = "/comecar";
 const ROUTE_DEMO = "/demo";
+const ROUTE_COMPARE = "/comparar";
+const ROUTE_FEED = "/feed";
+const ROUTE_MODEL = "/modelo";
 const ROUTE_EXPERIMENT = "/experimento";
 
-// As telas que só existem com uma sessão guardada. As telas definitivas
-// chegam nas tarefas E12 e E13.
-const PROTECTED_ROUTES = ["/comparar", "/feed", "/modelo"] as const;
+// As telas que só existem com uma sessão guardada. O painel do modelo chega
+// na tarefa E13.
+const PROTECTED_ROUTES = [ROUTE_MODEL] as const;
 
 /**
  * Placeholder temporário: mostra o nome da rota até a tela real existir.
@@ -49,6 +54,22 @@ export function AppRoutes() {
         <Route path={ROUTE_COLLECTION.slice(1)} element={<CollectionPage />} />
         <Route path={ROUTE_ONBOARDING.slice(1)} element={<OnboardingPage />} />
         <Route path={ROUTE_DEMO.slice(1)} element={<DemoPage />} />
+        <Route
+          path={ROUTE_COMPARE.slice(1)}
+          element={
+            <RequireSession>
+              <ComparePage />
+            </RequireSession>
+          }
+        />
+        <Route
+          path={ROUTE_FEED.slice(1)}
+          element={
+            <RequireSession>
+              <FeedPage />
+            </RequireSession>
+          }
+        />
         {PROTECTED_ROUTES.map((route) => (
           <Route
             key={route}

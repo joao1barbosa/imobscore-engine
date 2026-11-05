@@ -106,9 +106,15 @@ export function ComparePanel({ sessionId, onDone }: ComparePanelProps) {
           onDoneRef.current();
           return;
         }
-        await queryClient.invalidateQueries({ queryKey: ["pair", sessionId] });
+        // O próximo par vem pronto, e o que depende das escolhas é
+        // recalculado: a sessão, o feed e a posteriori.
+        void queryClient.prefetchQuery(pairQuery(sessionId));
         await queryClient.invalidateQueries({
           queryKey: ["session", sessionId],
+        });
+        await queryClient.invalidateQueries({ queryKey: ["feed", sessionId] });
+        await queryClient.invalidateQueries({
+          queryKey: ["posterior", sessionId],
         });
       } catch (error) {
         handleError(error, copy.compare.answerError);

@@ -88,6 +88,122 @@ const LISTING_B = {
   illustration: "house-1",
 };
 
+const LISTING_C = {
+  id: "3f1c0f7e-6c1a-4f0e-9a1b-000000000003",
+  code: "GYN-V-0224",
+  title: "Apartamento de 3 quartos no Setor Central",
+  neighborhood: "Setor Central",
+  city: "Goiânia",
+  purpose: "sale",
+  kind: "apartment",
+  price_brl: "424000.00",
+  area_m2: 86.7,
+  bedrooms: 3,
+  bathrooms: 3,
+  parking: 2,
+  age_years: 29,
+  leisure_count: 2,
+  dist_center_km: 0.9,
+  pet_friendly: true,
+  doorman_24h: true,
+  illustration: "apartment-2",
+};
+
+/** O feed simulado: a mesma lista, em ordens diferentes antes e depois. */
+const FEED_BEFORE = [
+  {
+    listing: LISTING_A,
+    score: 68,
+    affinity_pct: 68.2,
+    interval: [8, 99],
+    inspection_delta: 0,
+    reasons: [],
+    rank: 1,
+  },
+  {
+    listing: LISTING_B,
+    score: 55,
+    affinity_pct: 55.4,
+    interval: [4, 97],
+    inspection_delta: 0,
+    reasons: [],
+    rank: 2,
+  },
+  {
+    listing: LISTING_C,
+    score: 71,
+    affinity_pct: 71.1,
+    interval: [10, 100],
+    inspection_delta: 0,
+    reasons: [],
+    rank: 3,
+  },
+];
+
+const FEED_AFTER = [
+  {
+    listing: LISTING_C,
+    score: 74,
+    affinity_pct: 74.3,
+    interval: [19, 100],
+    inspection_delta: 0,
+    reasons: [
+      {
+        feature_key: "dist_center",
+        text: "perto do centro",
+        contribution: 0.31,
+      },
+      {
+        feature_key: "bedrooms",
+        text: "perto de 3 quartos",
+        contribution: 0.12,
+      },
+      {
+        feature_key: "log_price",
+        text: "mais caro que o típico",
+        contribution: -0.08,
+      },
+    ],
+    rank: 1,
+  },
+  {
+    listing: LISTING_A,
+    score: 79,
+    affinity_pct: 79.6,
+    interval: [21, 100],
+    inspection_delta: 0,
+    reasons: [
+      {
+        feature_key: "dist_center",
+        text: "perto do centro",
+        contribution: 0.22,
+      },
+      {
+        feature_key: "leisure",
+        text: "mais itens de lazer",
+        contribution: 0.09,
+      },
+    ],
+    rank: 2,
+  },
+  {
+    listing: LISTING_B,
+    score: 62,
+    affinity_pct: 62.8,
+    interval: [4, 99],
+    inspection_delta: 0,
+    reasons: [
+      { feature_key: "is_house", text: "é casa", contribution: 0.15 },
+      {
+        feature_key: "log_price",
+        text: "mais caro que o típico",
+        contribution: -0.11,
+      },
+    ],
+    rank: 3,
+  },
+];
+
 const PAIR = {
   position: 1,
   total: 25,
@@ -149,6 +265,17 @@ export const handlers: HttpHandler[] = [
   http.get("/api/v1/sessions/:sessionId/next-pair", () =>
     HttpResponse.json(PAIR),
   ),
+
+  http.get("/api/v1/sessions/:sessionId/feed", ({ request }) => {
+    const at = Number(new URL(request.url).searchParams.get("at") ?? 0);
+    const items = at > 0 ? FEED_AFTER : FEED_BEFORE;
+    return HttpResponse.json({
+      items,
+      next_offset: null,
+      method: "bayes",
+      n_comparisons: at,
+    });
+  }),
 
   http.post("/api/v1/sessions/:sessionId/comparisons/:position", () =>
     HttpResponse.json({
