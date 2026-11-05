@@ -34,7 +34,7 @@ export const copy = {
       lead: "O ImobScore tenta descobrir de qual imóvel cada pessoa gosta só pelas escolhas que ela faz. Este experimento mede se ele consegue.",
       whatToDo: {
         title: "O que você vai fazer",
-        body: "Escolher, em 25 pares de imóveis fictícios à venda em Goiânia-GO, qual você prefere. Antes, você informa uma faixa de preço e um perfil. Leva cerca de 2 minutos, e não existe resposta certa.",
+        body: "Escolher, em 20 pares de imóveis fictícios à venda em Goiânia-GO, qual você prefere. Antes, você informa uma faixa de preço e um perfil. Leva cerca de 5 minutos, e não existe resposta certa.",
       },
       howWeUse: {
         title: "Como usamos suas respostas",
@@ -68,7 +68,7 @@ export const copy = {
       max: "Máximo",
       limits: (floor: string, ceiling: string) => `Neste catálogo: de ${floor} a ${ceiling}`,
     },
-    submit: "Começar os 25 pares",
+    submit: "Começar os 20 pares",
     submitting: "Preparando os pares",
     validation: {
       consent: "É preciso concordar para participar",
@@ -268,7 +268,7 @@ export const copy = {
     title: "O experimento",
     lead: "Com poucas escolhas, qual método acerta mais a preferência de cada pessoa?",
     how: (n: number) =>
-      `${n} participantes. Cada um respondeu a 25 pares aleatórios: até 15 treinam os métodos, e 10 ficam de fora para o teste.`,
+      `${n} participantes. Cada um respondeu a pelo menos 20 pares aleatórios: até 10 treinam os métodos, e 10 ficam de fora para o teste.`,
     simulated: "Dados simulados: estes resultados não vêm de pessoas reais.",
     methods: {
       bayes: "Motor bayesiano",
