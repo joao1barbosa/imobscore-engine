@@ -15,8 +15,8 @@ from app.models import Comparison, FeatureStat, Listing, SessionModel
 
 COLLECTION_MODE = "collection"
 
-# Só entram no export as sessões da coleta com a coleta inteira respondida.
-MIN_ANSWERED_PAIRS = 25
+# Só entram no export as sessões da coleta com pelo menos 20 pares respondidos.
+MIN_ANSWERED_PAIRS = 20
 
 # São Paulo não tem horário de verão desde 2019, então o deslocamento é fixo.
 SAO_PAULO_TZ = timezone(timedelta(hours=-3))
@@ -103,7 +103,7 @@ def participant_export(
 
 
 def export_participants(db: Session) -> list[dict[str, Any]]:
-    """Os participantes da coleta que responderam os 25 pares."""
+    """Os participantes da coleta que responderam pelo menos 20 pares."""
     sessions = db.scalars(
         select(SessionModel)
         .where(SessionModel.mode == COLLECTION_MODE)

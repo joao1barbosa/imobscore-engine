@@ -68,7 +68,7 @@ def test_next_pair_devolve_o_primeiro_par(client: TestClient, seeded: Session) -
     assert response.status_code == 200
     pair = response.json()
     assert pair["position"] == 1
-    assert pair["total"] == 25
+    assert pair["total"] == get_settings().pairs_collection
     assert pair["listing_a"]["id"] != pair["listing_b"]["id"]
     assert pair["listing_a"]["code"].startswith("GYN-V-")
     assert pair["listing_b"]["code"].startswith("GYN-V-")
@@ -83,12 +83,13 @@ def test_recarregar_devolve_o_mesmo_par_pendente(client: TestClient, seeded: Ses
     assert first == second
 
 
-def test_vinte_e_cinco_pares_sem_repetir(client: TestClient, seeded: Session) -> None:
+def test_pares_sem_repetir(client: TestClient, seeded: Session) -> None:
     session_id = start_session(client)
+    total_pairs = get_settings().pairs_collection
 
     seen: list[frozenset[str]] = []
     appearances: Counter[str] = Counter()
-    for position in range(1, 26):
+    for position in range(1, total_pairs + 1):
         pair = client.get(f"/api/v1/sessions/{session_id}/next-pair").json()
         assert pair["position"] == position
 
@@ -99,11 +100,11 @@ def test_vinte_e_cinco_pares_sem_repetir(client: TestClient, seeded: Session) ->
         response = answer(client, session_id, position)
         assert response.status_code == 200
 
-    assert len(set(seen)) == 25
+    assert len(set(seen)) == total_pairs
     assert max(appearances.values()) <= 3
 
     comparisons = seeded.scalars(select(Comparison)).all()
-    assert len(comparisons) == 25
+    assert len(comparisons) == total_pairs
     assert all(comparison.selection == "random" for comparison in comparisons)
     assert all(comparison.chosen is not None for comparison in comparisons)
 
@@ -132,19 +133,25 @@ def test_resposta_fora_de_ordem_da_409(client: TestClient, seeded: Session) -> N
 
 def test_apos_o_ultimo_par_a_sessao_termina(client: TestClient, seeded: Session) -> None:
     session_id = start_session(client)
+    total_pairs = get_settings().pairs_collection
 
     last = None
-    for position in range(1, 26):
+    for position in range(1, total_pairs + 1):
         client.get(f"/api/v1/sessions/{session_id}/next-pair")
         last = answer(client, session_id, position)
 
     assert last is not None
     assert last.status_code == 200
-    assert last.json() == {"answered": 25, "total": 25, "done": True, "diagnostics": None}
+    assert last.json() == {
+        "answered": total_pairs,
+        "total": total_pairs,
+        "done": True,
+        "diagnostics": None,
+    }
 
     state = client.get(f"/api/v1/sessions/{session_id}").json()
     assert state["status"] == "done"
-    assert state["answered"] == 25
+    assert state["answered"] == total_pairs
 
     next_pair = client.get(f"/api/v1/sessions/{session_id}/next-pair")
     assert next_pair.status_code == 204
@@ -153,11 +160,12 @@ def test_apos_o_ultimo_par_a_sessao_termina(client: TestClient, seeded: Session)
 
 def test_sessao_terminada_recusa_nova_resposta(client: TestClient, seeded: Session) -> None:
     session_id = start_session(client)
-    for position in range(1, 26):
+    total_pairs = get_settings().pairs_collection
+    for position in range(1, total_pairs + 1):
         client.get(f"/api/v1/sessions/{session_id}/next-pair")
         answer(client, session_id, position)
 
-    response = answer(client, session_id, 25)
+    response = answer(client, session_id, total_pairs)
 
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "session_done"

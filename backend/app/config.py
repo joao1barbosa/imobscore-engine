@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     prior_sd: float = 1.0
     pairs_demo: int = 3
     pairs_product: int = 8
-    pairs_collection: int = 25
+    pairs_collection: int = 20
     catalog_seed: int = 42
     log_level: str = "INFO"
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]

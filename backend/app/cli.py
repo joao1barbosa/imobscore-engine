@@ -88,7 +88,7 @@ def export(
             raise typer.Exit(code=1) from error
 
     if total == 0:
-        typer.echo("Nenhuma sessão da coleta com os 25 pares respondidos.")
+        typer.echo("Nenhuma sessão da coleta com pelo menos 20 pares respondidos.")
     typer.echo(f"Exportados {total} participantes para {out}.")
 
 

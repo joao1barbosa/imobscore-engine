@@ -45,7 +45,7 @@ def test_cria_sessao_de_coleta_com_consentimento(client: TestClient, seeded: Ses
     assert body["city"] == "Goiânia"
     assert body["purpose"] == "sale"
     assert body["persona_slug"] == "familia"
-    assert body["target_pairs"] == 25
+    assert body["target_pairs"] == get_settings().pairs_collection
     assert body["answered"] == 0
     assert body["status"] == "comparing"
     assert Decimal(body["price_min"]) == Decimal("300000")

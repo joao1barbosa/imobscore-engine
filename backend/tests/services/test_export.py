@@ -43,7 +43,7 @@ def add_collection(
         price_min=Decimal("300000.00"),
         price_max=Decimal("900000.00"),
         persona_slug="familia",
-        target_pairs=25,
+        target_pairs=answered,
         participant_code=code if collection else None,
         consent_at=datetime.now(UTC) if collection else None,
     )
@@ -92,12 +92,30 @@ def test_export_traz_o_participante_com_os_vinte_e_cinco_pares(seeded: Session) 
     assert [pair["position"] for pair in participant["pairs"]] == list(range(1, 26))
 
 
-def test_export_ignora_sessao_com_pares_de_menos(seeded: Session) -> None:
-    add_collection(seeded, answered=24)
+def test_export_traz_sessao_com_vinte_pares(seeded: Session) -> None:
+    add_collection(seeded, answered=20)
+
+    payload = build_export(seeded)
+
+    assert len(payload["participants"]) == 1
+    assert len(payload["participants"][0]["pairs"]) == 20
+
+
+def test_export_ignora_sessao_com_dezenove_pares(seeded: Session) -> None:
+    add_collection(seeded, answered=19)
 
     payload = build_export(seeded)
 
     assert payload["participants"] == []
+
+
+def test_export_traz_sessao_com_vinte_e_cinco_pares(seeded: Session) -> None:
+    add_collection(seeded, answered=25)
+
+    payload = build_export(seeded)
+
+    assert len(payload["participants"]) == 1
+    assert len(payload["participants"][0]["pairs"]) == 25
 
 
 def test_export_ignora_sessao_que_nao_e_da_coleta(seeded: Session) -> None:

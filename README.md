@@ -4,7 +4,7 @@ App web que recomenda imóveis a partir de escolhas entre pares ("qual você pre
 
 ## Escopo do MVP
 
-- **Coleta (`/coleta`):** um colega lê uma tela inicial sobre o experimento, aceita o consentimento, informa a faixa de preço, escolhe uma persona e responde a 25 pares aleatórios de imóveis à venda em Goiânia.
+- **Coleta (`/coleta`):** um colega lê uma tela inicial sobre o experimento, aceita o consentimento, informa a faixa de preço, escolhe uma persona e responde a 20 pares aleatórios de imóveis à venda em Goiânia.
 - **Onboarding (`/comecar`) e modo demo (`/demo`):** faixa de preço e persona (Família, Investidor ou Estudante), sempre para imóveis à venda em Goiânia. No modo demo, um toque na persona preenche o resto.
 - **Comparações (`/comparar`):** 3 pares na demo, escolhidos pelo motor.
 - **Feed (`/feed`):** o catálogo ordenado por uma nota de afinidade de 0 a 100, com intervalo de incerteza e a alternância Antes e Depois.

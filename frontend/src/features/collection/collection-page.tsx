@@ -21,7 +21,7 @@ import { Welcome } from "./welcome";
 type Phase = "welcome" | "form" | "pairs" | "thanks";
 
 /**
- * A rota da coleta: tela inicial, formulário, os 25 pares e o agradecimento.
+ * A rota da coleta: tela inicial, formulário, os pares e o agradecimento.
  */
 export function CollectionPage() {
   const sessionId = useSessionStore((state) => state.sessionId);
