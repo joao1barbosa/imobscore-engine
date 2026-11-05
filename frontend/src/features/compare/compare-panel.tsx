@@ -107,8 +107,9 @@ export function ComparePanel({ sessionId, onDone }: ComparePanelProps) {
           return;
         }
         // O próximo par vem pronto, e o que depende das escolhas é
-        // recalculado: a sessão, o feed e a posteriori.
-        void queryClient.prefetchQuery(pairQuery(sessionId));
+        // recalculado: a sessão, o feed e a posteriori. A espera mantém os
+        // cartões desabilitados até o próximo par chegar.
+        await queryClient.prefetchQuery(pairQuery(sessionId));
         await queryClient.invalidateQueries({
           queryKey: ["session", sessionId],
         });
