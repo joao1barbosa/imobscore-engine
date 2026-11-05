@@ -21,9 +21,9 @@ A03, E06
 - **Rotas:** `GET /meta/options`, `GET /meta/personas`, `POST /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/next-pair`, `POST /sessions/{id}/comparisons/{position}`, com os schemas e as regras da seção 6.
 - **`MetaOptions`:** `{ segments: [{ city, purpose, price_floor, price_ceiling }] }`, com o menor e o maior preço de cada segmento.
 - **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Em todos os modos, exige `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`). Na coleta, também exige `consent = true` e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
-- **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 25 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
+- **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos `target_pairs` pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
 - **Modos `demo` e `product`:** `POST /sessions` já funciona, mas `GET /next-pair` devolve `501 not_available` até a E10.
-- **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
+- **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 fora de Goiânia ou de compra; os pares da coleta sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do último par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
 
 ## Verificação
 
@@ -146,7 +146,7 @@ class PosteriorOut(BaseModel):
 - **Cache:** o ranking é guardado em memória por `(session_id, n_comparisons, method)`, até 128 entradas.
 - **Erros:** formato único `{"detail": {"code": "...", "message": "..."}}`, com mensagem em pt-BR. Códigos: `session_not_found` (404), `listing_not_found` (404), `pair_already_answered` (409), `pair_out_of_order` (409), `session_done` (409), `validation_error` (422), `not_available` (501). Um handler global converte o `RequestValidationError` do FastAPI para esse formato.
 - **CORS:** liberado só para `http://localhost:5173` (desenvolvimento). Com o Docker Compose, o Nginx serve front-end e API na mesma origem.
-- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=25`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
+- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=20`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
 
 ### Seção 4 · Tabelas usadas
 

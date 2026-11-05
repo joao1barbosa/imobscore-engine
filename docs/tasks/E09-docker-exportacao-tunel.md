@@ -44,7 +44,7 @@ E07, E08
   ]
 }
 ```
-- **Regras do export:** só sessões `collection` com pelo menos 25 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
+- **Regras do export:** só sessões `collection` com pelo menos 20 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
 
 ## Verificação
 

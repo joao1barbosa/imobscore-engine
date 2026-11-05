@@ -12,7 +12,7 @@ Este documento é autocontido. Nenhum agente deve precisar de informação que n
 
 Um app web que recomenda imóveis a partir de escolhas entre pares ("qual você prefere?"). Ele roda inteiro no notebook com Docker Compose, sem internet. São cinco fluxos:
 
-1. **Coleta (`/coleta`):** um colega lê uma tela inicial sobre o experimento, aceita o consentimento, informa a faixa de preço, escolhe uma persona e responde a 25 pares aleatórios de imóveis à venda em Goiânia. O servidor gera o código do participante, e nenhum dado pessoal é coletado. Os dados servem ao experimento.
+1. **Coleta (`/coleta`):** um colega lê uma tela inicial sobre o experimento, aceita o consentimento, informa a faixa de preço, escolhe uma persona e responde a 20 pares aleatórios de imóveis à venda em Goiânia. O servidor gera o código do participante, e nenhum dado pessoal é coletado. Os dados servem ao experimento.
 2. **Onboarding (`/comecar`) e modo demo (`/demo`):** faixa de preço e persona (Família, Investidor ou Estudante), sempre para imóveis à venda em Goiânia. No modo demo, um toque na persona preenche o resto.
 3. **Comparações (`/comparar`):** 3 pares na demo, escolhidos pelo motor.
 4. **Feed (`/feed`):** o catálogo ordenado por uma nota de afinidade de 0 a 100, com intervalo de incerteza e a alternância Antes e Depois.
@@ -576,7 +576,7 @@ CREATE TABLE experiment_results (
   run_id           uuid NOT NULL,
   participant_code text NOT NULL,
   method           text NOT NULL CHECK (method IN ('equal','persona','mle','bayes')),
-  n_train          smallint NOT NULL,                -- 3, 5, 10, 15
+  n_train          smallint NOT NULL,                -- 3, 5, 10
   split_seed       integer NOT NULL,
   n_test           smallint NOT NULL,
   accuracy         double precision NOT NULL,
@@ -761,8 +761,8 @@ No feed, a comparação lado a lado usa `persona` à esquerda e `bayes` à direi
 
 ### 5.9 Protocolo de avaliação (comando `evaluate`)
 
-1. Entram as sessões `collection` com pelo menos 25 pares respondidos. Os pares também são exportados para `data/collected/pairs.json` pelo comando `export`, e o `evaluate` aceita esse arquivo como entrada (`--from-json`). Assim a avaliação roda sem banco.
-2. Para cada participante, cada n\_train em {3, 5, 10, 15} e cada `split_seed` de 0 a 19: sorteie 10 pares de teste. Os pares de treino são os n\_train primeiros dos que sobraram, em ordem embaralhada.
+1. Entram as sessões `collection` com pelo menos 20 pares respondidos. Os pares também são exportados para `data/collected/pairs.json` pelo comando `export`, e o `evaluate` aceita esse arquivo como entrada (`--from-json`). Assim a avaliação roda sem banco.
+2. Para cada participante, cada n\_train em {3, 5, 10} e cada `split_seed` de 0 a 19: sorteie 10 pares de teste. Os pares de treino são os n\_train primeiros dos que sobraram, em ordem embaralhada.
 3. Treine `mle` e `bayes` só com o treino. `equal` e `persona` não treinam, mas são avaliados nos mesmos pares de teste.
 4. Métricas no teste: **acurácia** (acerto quando p > 0,5; p = 0,5 vale meio acerto) e **perda logarítmica** (com p limitado a \[10⁻⁶, 1 − 10⁻⁶\]).
 5. Grave uma linha por (participante, método, n\_train, split) em `experiment_results`, todas com o mesmo `run_id`.
@@ -871,7 +871,7 @@ class ResultRow:
     n_test: int; accuracy: float; log_loss: float
 
 def evaluate_participant(code: str, D: np.ndarray, mu: np.ndarray, sd: np.ndarray, *,
-                         n_train_list: tuple[int, ...] = (3, 5, 10, 15), n_splits: int = 20,
+                         n_train_list: tuple[int, ...] = (3, 5, 10), n_splits: int = 20,
                          n_test: int = 10, cfg: MCMCConfig = MCMCConfig()) -> list[ResultRow]: ...
 # D (m, 12) = pares do participante, orientados vencedor - perdedor, na ordem respondida; protocolo 5.9
 def simulate_choices(D_left_minus_right: np.ndarray, w_true: np.ndarray,
@@ -979,7 +979,7 @@ class PosteriorOut(BaseModel):
 - **Cache:** o ranking é guardado em memória por `(session_id, n_comparisons, method)`, até 128 entradas.
 - **Erros:** formato único `{"detail": {"code": "...", "message": "..."}}`, com mensagem em pt-BR. Códigos: `session_not_found` (404), `listing_not_found` (404), `pair_already_answered` (409), `pair_out_of_order` (409), `session_done` (409), `validation_error` (422), `not_available` (501). Um handler global converte o `RequestValidationError` do FastAPI para esse formato.
 - **CORS:** liberado só para `http://localhost:5173` (desenvolvimento). Com o Docker Compose, o Nginx serve front-end e API na mesma origem.
-- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=25`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
+- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=20`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
 
 ## 7. Front-end
 
@@ -987,7 +987,7 @@ São 7 rotas no MVP, mais uma condicional. O fluxo principal é onboarding → c
 
 | Rota | Tela | Mockup | Conteúdo | Tarefa |
 | --- | --- | --- | --- | --- |
-| `/coleta` | Coleta | M1 + M4 | Tela inicial, consentimento, faixa de preço (Goiânia, compra), persona, 25 pares e agradecimento; o servidor gera o código do participante | E08 (primeira a ficar pronta) |
+| `/coleta` | Coleta | M1 + M4 | Tela inicial, consentimento, faixa de preço (Goiânia, compra), persona, 20 pares e agradecimento; o servidor gera o código do participante | E08 (primeira a ficar pronta) |
 | `/` | Início | M2 | Frase "Pare de filtrar. Comece a escolher.", botão Começar e botão Modo demo | E11 |
 | `/comecar` | Onboarding | M3 | Passo 1: faixa de preço (Goiânia, compra). Passo 2: cartões das 3 personas | E11 |
 | `/demo` | Modo demo | M3b | 3 cartões de persona; um toque cria a sessão `demo` com `demo_defaults` e vai para `/comparar` | E11 |
@@ -1024,7 +1024,7 @@ export const collectionSchema = z.object({
 
 **Painel do modelo (`features/model-panel`).** Gráfico de intervalos (Recharts, `ComposedChart` com barras de erro): para cada característica, um ponto para a média da priori e outro para a da posteriori, com a faixa de 5% a 95%. Abaixo, o traço de 4 das 16 cadeias de um peso escolhido em um `Select`, e um quadro com aceitação, R-hat, ESS e tempo. É a tela que conversa com a banca.
 
-**Painel do experimento (`features/experiment`).** Linhas de acurácia contra n\_train (3, 5, 10, 15), uma por método, com faixa de ±1 desvio, e uma tabela com acurácia e perda logarítmica. Se a rodada tiver participantes simulados, um aviso fixo diz "Dados simulados".
+**Painel do experimento (`features/experiment`).** Linhas de acurácia contra n\_train (3, 5, 10), uma por método, com faixa de ±1 desvio, e uma tabela com acurácia e perda logarítmica. Se a rodada tiver participantes simulados, um aviso fixo diz "Dados simulados".
 
 ### Dados e estado
 
@@ -1132,7 +1132,7 @@ Claude constrói o motor e desenha as telas; o executor implementa o resto em pa
   - Olhar os 10 primeiros imóveis do feed de cada persona com 0 pares. Se algum resultado for absurdo (ex.: Família com quitinetes no topo), ajustar `personas.yaml` e explicar a João no CP5.
   - Problemas viram `FIX-n`, como na A-REV1.
 - [ ] **A08 · Experimento com dados reais** · dom 08/11, a partir das 12h · depende de: coleta encerrada, A07
-  - Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 25 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
+  - Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 20 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
   - Escrever `docs/results.md` (até 1 página): número de participantes, tabela de acurácia e perda logarítmica por método em n\_train = 3, 5 e 15, se H1 e H2 se confirmaram e as limitações (seção 11 do guia).
   - **Checkpoint:** CP6.
 - [ ] **A09 · Revisão final e roteiro da demo** · seg 09/11 · depende de: E15
@@ -1257,9 +1257,9 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
   - **Rotas:** `GET /meta/options`, `GET /meta/personas`, `POST /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/next-pair`, `POST /sessions/{id}/comparisons/{position}`, com os schemas e as regras da seção 6.
   - **`MetaOptions`:** `{ segments: [{ city, purpose, price_floor, price_ceiling }] }`, com o menor e o maior preço de cada segmento.
   - **`POST /sessions`:** `target_pairs` vem de `PAIRS_DEMO`, `PAIRS_PRODUCT` ou `PAIRS_COLLECTION`, conforme `mode`. Em todos os modos, exige `city = "Goiânia"` e `purpose = "sale"` (senão, `422 validation_error`). Na coleta, também exige `consent = true` e grava `consent_at = now()`. O servidor gera `participant_code` como `P` mais o maior número já usado somado a 1, com dois dígitos no mínimo (P01, P02...), na mesma transação e depois de `pg_advisory_xact_lock`, para duas pessoas ao mesmo tempo não receberem o mesmo código. `SessionOut` não devolve o código. Quem trocar de aparelho abre outra sessão, com outro código.
-  - **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos 25 pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
+  - **Pares da coleta:** os candidatos são `candidate_listings(session)` (seção 6), ordenados por `code`. A lista dos `target_pairs` pares é `random_pairs(len(candidatos), target_pairs, np.random.default_rng(seed_for(session.id, 0)))`, recalculada de forma determinística a cada chamada. O par da posição k é o k-ésimo da lista, gravado em `comparisons` com `selection = 'random'` na primeira vez que for pedido.
   - **Modos `demo` e `product`:** `POST /sessions` já funciona, mas `GET /next-pair` devolve `501 not_available` até a E10.
-  - **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 fora de Goiânia ou de compra; 25 pares sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do 25º par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
+  - **Testes:** criação com e sem consentimento; códigos gerados em sequência (P01, P02); 422 fora de Goiânia ou de compra; os pares da coleta sem repetir; recarregar devolve o mesmo par pendente; 409 em resposta repetida e fora de ordem; 204 depois do último par e `status = done`; 404 com sessão inexistente; 422 com `price_min >= price_max`.
   - **Verificação:** `cd backend && uv run pytest -q tests/api`.
 - [ ] **E08 · Telas da coleta** · qui 05/11 · depende de: E05, E07, M1 e M4 aprovados
   - **Arquivos:** `frontend/src/api/schema.d.ts` (gerado com `pnpm gen:api`), `src/api/client.ts` (`createClient<paths>({ baseUrl: "/api/v1" })`), `src/api/queries.ts`; `src/lib/format.ts` (`formatBRL`, `formatArea`, `formatDistance` ("2,3 km"), via `Intl.NumberFormat("pt-BR")`); `src/features/collection/*` e `src/features/compare/*`, com os componentes e arquivos listados em `m1-coleta.md` e `m4-comparar.md`; `src/mocks/handlers.ts`; os testes desses componentes; `src/app/router.tsx` (só trocar o placeholder de `/coleta`).
@@ -1294,7 +1294,7 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
     ]
   }
   ```
-  - **Regras do export:** só sessões `collection` com pelo menos 25 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
+  - **Regras do export:** só sessões `collection` com pelo menos 20 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
   - **Verificação:** `make up` a partir de um clone limpo, seguido de `make seed`, sobe tudo; `curl http://localhost:8080/api/v1/health` responde ok; `make tunnel` gera um endereço, e um celular fora da rede local completa os 25 pares por ele; `make export` gera um JSON válido com esse participante. **João envia o link aos colegas às 18h**; o mesmo link serve para todos.
 
 * [ ] **E10 · API do feed, do modelo e do experimento** · sex 06/11 · depende de: A06 concluída em `docs/STATUS.md`
@@ -1485,7 +1485,7 @@ O plano já assume uma resposta padrão para cada questão, então nada bloqueia
 | Quantas horas por dia João tem para checkpoints e aprovações? | 4 a 5 horas | Menos tempo: CP1 e CP2 viram um só, e CP5 vai para o domingo | qua 04/11, manhã |
 | Qual modelo do OpenCode Go faz o papel de executor? | Qualquer um que João escolher; o plano não depende do modelo | Trocar de modelo se uma tarefa falhar duas vezes | qua 04/11, manhã |
 | Como os colegas acessam a coleta? | Túnel do Cloudflare com o notebook ligado de 05/11, 18h, a 08/11, 12h | Coleta presencial no notebook; deploy mínimo só da coleta | qui 05/11, 12h |
-| Quantos colegas e quantos pares cada um? | Até 10 colegas, 25 pares aleatórios (cerca de 2 minutos), o que limita a curva a n\_train = 15; catálogo inteiro em Goiânia e à venda. Decidido por João em 04/11 | — | Decidido |
+| Quantos colegas e quantos pares cada um? | Até 10 colegas, 20 pares aleatórios (cerca de 5 minutos), o que limita a curva a n\_train = 10, com 10 pares de teste; catálogo inteiro em Goiânia e à venda. Decidido por João em 04/11; de 25 para 20 pares em 05/11, depois das primeiras respostas | — | Decidido |
 | As 12 características da seção 5.1 estão certas? | Lista da seção 5.1 | Trocar `is_house` por andar; separar o condomínio do preço | qua 04/11, antes da A02 |
 | Os pesos das personas fazem sentido? | Tabela da seção 5.3 | Ajuste na A-REV2, olhando o feed de cada persona | sáb 07/11 |
 | Formato do relatório para a disciplina | `docs/results.md`, figuras e CSV gerados pela A07 e pela A08 | Confirmar com o professor | sex 06/11 |

@@ -162,7 +162,7 @@ class PosteriorOut(BaseModel):
 - **Cache:** o ranking é guardado em memória por `(session_id, n_comparisons, method)`, até 128 entradas.
 - **Erros:** formato único `{"detail": {"code": "...", "message": "..."}}`, com mensagem em pt-BR. Códigos: `session_not_found` (404), `listing_not_found` (404), `pair_already_answered` (409), `pair_out_of_order` (409), `session_done` (409), `validation_error` (422), `not_available` (501). Um handler global converte o `RequestValidationError` do FastAPI para esse formato.
 - **CORS:** liberado só para `http://localhost:5173` (desenvolvimento). Com o Docker Compose, o Nginx serve front-end e API na mesma origem.
-- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=25`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
+- **Configuração (`.env`):** `DATABASE_URL`, `MCMC_CHAINS=16`, `MCMC_WARMUP=1000`, `MCMC_DRAWS=2000`, `MCMC_THIN=8`, `PRIOR_SD=1.0`, `PAIRS_DEMO=3`, `PAIRS_PRODUCT=8`, `PAIRS_COLLECTION=20`, `CATALOG_SEED=42`, `LOG_LEVEL=INFO`, `CORS_ORIGINS=http://localhost:5173`.
 
 ### Seção 1.7 · Escopo no prazo curto
 
@@ -289,7 +289,7 @@ CREATE TABLE experiment_results (
   run_id           uuid NOT NULL,
   participant_code text NOT NULL,
   method           text NOT NULL CHECK (method IN ('equal','persona','mle','bayes')),
-  n_train          smallint NOT NULL,                -- 3, 5, 10, 15
+  n_train          smallint NOT NULL,                -- 3, 5, 10
   split_seed       integer NOT NULL,
   n_test           smallint NOT NULL,
   accuracy         double precision NOT NULL,
@@ -439,7 +439,7 @@ class ResultRow:
     n_test: int; accuracy: float; log_loss: float
 
 def evaluate_participant(code: str, D: np.ndarray, mu: np.ndarray, sd: np.ndarray, *,
-                         n_train_list: tuple[int, ...] = (3, 5, 10, 15), n_splits: int = 20,
+                         n_train_list: tuple[int, ...] = (3, 5, 10), n_splits: int = 20,
                          n_test: int = 10, cfg: MCMCConfig = MCMCConfig()) -> list[ResultRow]: ...
 # D (m, 12) = pares do participante, orientados vencedor - perdedor, na ordem respondida; protocolo 5.9
 def simulate_choices(D_left_minus_right: np.ndarray, w_true: np.ndarray,

@@ -42,11 +42,25 @@ def test_uma_linha_por_participante_metodo_treino_e_split() -> None:
 
     rows = evaluate_participant("P01", D, w, np.ones(N), n_splits=2, cfg=FAST)
 
-    assert len(rows) == 4 * 2 * 4
+    assert len(rows) == 4 * 2 * 3
     assert {row.method for row in rows} == {"equal", "persona", "mle", "bayes"}
-    assert {row.n_train for row in rows} == {3, 5, 10, 15}
+    assert {row.n_train for row in rows} == {3, 5, 10}
     assert {row.split_seed for row in rows} == {0, 1}
     assert all(row.n_test == 10 and 0.0 <= row.accuracy <= 1.0 for row in rows)
+
+
+def test_vinte_pares_bastam_e_dezenove_nao() -> None:
+    w = np.ones(N)
+
+    rows = evaluate_participant(
+        "P01", oriented_pairs(w, 20, seed=3), w, np.ones(N), n_splits=1, cfg=FAST
+    )
+
+    assert {row.n_train for row in rows} == {3, 5, 10}
+    with pytest.raises(ValueError, match="são precisos 20"):
+        evaluate_participant(
+            "P02", oriented_pairs(w, 19, seed=4), w, np.ones(N), n_splits=1, cfg=FAST
+        )
 
 
 def test_metodos_sem_treino_nao_mudam_com_o_numero_de_pares() -> None:
@@ -102,7 +116,7 @@ def test_treino_e_teste_nao_se_misturam(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_participante_com_poucos_pares_avisa() -> None:
     with pytest.raises(ValueError, match="P01"):
-        evaluate_participant("P01", np.zeros((20, N)), np.ones(N), np.ones(N), cfg=FAST)
+        evaluate_participant("P01", np.zeros((19, N)), np.ones(N), np.ones(N), cfg=FAST)
 
 
 def test_simulate_choices_segue_a_probabilidade_do_modelo() -> None:

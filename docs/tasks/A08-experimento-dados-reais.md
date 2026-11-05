@@ -18,13 +18,13 @@ coleta encerrada, A07
 
 ## Especificação
 
-- Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 25 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
+- Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 20 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
 - Escrever `docs/results.md` (até 1 página): número de participantes, tabela de acurácia e perda logarítmica por método em n\_train = 3, 5 e 15, se H1 e H2 se confirmaram e as limitações (seção 11 do guia).
 - **Checkpoint:** CP6.
 
 ## Verificação
 
-`make evaluate`. Se houver menos de 5 participantes com pelo menos 25 pares, rodar também `make simulate` e o `evaluate` sobre os dados simulados.
+`make evaluate`. Se houver menos de 5 participantes com pelo menos 20 pares, rodar também `make simulate` e o `evaluate` sobre os dados simulados.
 
 ## Atenção
 

@@ -113,7 +113,7 @@ CREATE TABLE experiment_results (
   run_id           uuid NOT NULL,
   participant_code text NOT NULL,
   method           text NOT NULL CHECK (method IN ('equal','persona','mle','bayes')),
-  n_train          smallint NOT NULL,                -- 3, 5, 10, 15
+  n_train          smallint NOT NULL,                -- 3, 5, 10
   split_seed       integer NOT NULL,
   n_test           smallint NOT NULL,
   accuracy         double precision NOT NULL,

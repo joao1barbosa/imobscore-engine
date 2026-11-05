@@ -37,7 +37,7 @@ def evaluate_participant(
     mu: np.ndarray,
     sd: np.ndarray,
     *,
-    n_train_list: tuple[int, ...] = (3, 5, 10, 15),
+    n_train_list: tuple[int, ...] = (3, 5, 10),
     n_splits: int = 20,
     n_test: int = 10,
     cfg: MCMCConfig = DEFAULT_CONFIG,
