@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
 import { ArrowRight, CircleAlert, LoaderCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,6 +64,11 @@ export function CollectionForm({
 }: CollectionFormProps) {
   const [submitting, setSubmitting] = useState(false);
 
+  // As três seções do formulário, para o erro aparecer à vista.
+  const consentRef = useRef<HTMLElement>(null);
+  const priceRef = useRef<HTMLElement>(null);
+  const personaRef = useRef<HTMLElement>(null);
+
   const form = useForm<CollectionFormValues>({
     resolver: zodResolver(
       collectionFormSchema(segment),
@@ -75,6 +80,32 @@ export function CollectionForm({
       personaSlug: undefined,
     },
   });
+
+  /**
+   * O envio foi recusado: a primeira seção com erro vai para o centro da
+   * tela, para a pessoa ver a mensagem sem rolar.
+   */
+  const onInvalid = (errors: FieldErrors<CollectionFormValues>) => {
+    if (errors.consent) {
+      consentRef.current?.scrollIntoView({ block: "center" });
+      return;
+    }
+    if (errors.priceMin || errors.priceMax) {
+      priceRef.current?.scrollIntoView({ block: "center" });
+      return;
+    }
+    if (errors.personaSlug) {
+      personaRef.current?.scrollIntoView({ block: "center" });
+    }
+  };
+
+  /**
+   * O envio é tratado no evento: o React Hook Form valida e só então chama o
+   * `onInvalid`, que leva a seção com erro para o centro da tela.
+   */
+  const onFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    void form.handleSubmit(onSubmit, onInvalid)(event);
+  };
 
   const onSubmit = async (values: CollectionFormValues) => {
     if (!values.personaSlug) {
@@ -102,7 +133,7 @@ export function CollectionForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={onFormSubmit}
         className="flex flex-col gap-4 md:gap-6"
         noValidate
       >
@@ -115,7 +146,10 @@ export function CollectionForm({
           </p>
         </div>
 
-        <section className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6">
+        <section
+          ref={consentRef}
+          className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6"
+        >
           <h2 className="font-semibold">
             {copy.collection.sections.participation}
           </h2>
@@ -147,7 +181,10 @@ export function CollectionForm({
           />
         </section>
 
-        <section className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6">
+        <section
+          ref={priceRef}
+          className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6"
+        >
           <h2 className="font-semibold">{copy.collection.sections.search}</h2>
           <p className="flex items-center gap-2 rounded-lg bg-muted p-3 text-sm font-medium">
             <MapPin className="size-4 text-primary" aria-hidden="true" />
@@ -160,7 +197,10 @@ export function CollectionForm({
           />
         </section>
 
-        <section className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6">
+        <section
+          ref={personaRef}
+          className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6"
+        >
           <h2 className="font-semibold">{copy.collection.sections.persona}</h2>
           <FormField
             control={form.control}

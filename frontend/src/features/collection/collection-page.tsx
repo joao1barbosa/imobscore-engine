@@ -121,7 +121,14 @@ export function CollectionPage() {
       <PageHeader />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-5 md:gap-6 md:py-10">
         {phase === "welcome" ? (
-          <Welcome onStart={() => setLocalPhase("form")} />
+          <Welcome
+            onStart={() => {
+              // A rolagem da tela inicial é zerada, para o formulário abrir
+              // pelo topo, com a caixa de consentimento à vista.
+              window.scrollTo(0, 0);
+              setLocalPhase("form");
+            }}
+          />
         ) : null}
 
         {phase === "thanks" ? <ThankYou total={totalPairs} /> : null}

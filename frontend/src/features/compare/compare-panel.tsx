@@ -40,6 +40,13 @@ export function ComparePanel({ sessionId, onDone }: ComparePanelProps) {
   const pair = pairState.data ?? null;
   const position = pair?.position;
 
+  // A sessão que não existe mais é a única que some da tela: nos outros
+  // erros, as respostas já gravadas ficam guardadas e a pessoa pode tentar
+  // de novo.
+  const sessionMissing =
+    pairState.error instanceof ApiRequestError &&
+    pairState.error.code === "session_not_found";
+
   // O tempo de resposta conta desde que o par aparece.
   useEffect(() => {
     if (position !== undefined) {
@@ -134,7 +141,7 @@ export function ComparePanel({ sessionId, onDone }: ComparePanelProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [choose]);
 
-  if (notFound || pairState.isError) {
+  if (notFound || sessionMissing) {
     return (
       <div className="flex min-h-dvh flex-col">
         <PageHeader />
@@ -143,6 +150,24 @@ export function ComparePanel({ sessionId, onDone }: ComparePanelProps) {
             tone="error"
             title={copy.common.apiErrors.session_not_found}
             description={copy.compare.loadError.description}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  if (pairState.isError) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <PageHeader />
+        <main className="mx-auto flex w-full max-w-md flex-1 items-center px-4 py-3">
+          <CompareMessage
+            tone="error"
+            title={copy.compare.loadError.title}
+            description={copy.compare.loadError.description}
+            onRetry={() => {
+              void pairState.refetch();
+            }}
           />
         </main>
       </div>

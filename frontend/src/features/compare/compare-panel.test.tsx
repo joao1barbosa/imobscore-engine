@@ -90,4 +90,72 @@ describe("painel de comparação", () => {
     liberar();
     await waitFor(() => expect(card).toBeEnabled());
   });
+
+  it("next-pair com 502 mostra o erro com o botão de tentar de novo", async () => {
+    server.use(
+      http.get(
+        "/api/v1/sessions/:sessionId/next-pair",
+        () => new HttpResponse(null, { status: 502 }),
+      ),
+    );
+    renderPanel();
+
+    expect(
+      await screen.findByText(copy.compare.loadError.title),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: copy.common.retry }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(copy.common.apiErrors.session_not_found),
+    ).not.toBeInTheDocument();
+  });
+
+  it("depois de um erro, tentar de novo volta ao par", async () => {
+    let chamadas = 0;
+    server.use(
+      http.get("/api/v1/sessions/:sessionId/next-pair", () => {
+        chamadas += 1;
+        if (chamadas === 1) {
+          return new HttpResponse(null, { status: 502 });
+        }
+        return undefined;
+      }),
+    );
+    renderPanel();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: copy.common.retry }),
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: /Escolher Apartamento de 3 quartos/,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("next-pair com 404 session_not_found mantém a mensagem sem botão", async () => {
+    server.use(
+      http.get("/api/v1/sessions/:sessionId/next-pair", () =>
+        HttpResponse.json(
+          {
+            detail: {
+              code: "session_not_found",
+              message: "Não encontramos esta sessão.",
+            },
+          },
+          { status: 404 },
+        ),
+      ),
+    );
+    renderPanel();
+
+    expect(
+      await screen.findByText(copy.common.apiErrors.session_not_found),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: copy.common.retry }),
+    ).not.toBeInTheDocument();
+  });
 });

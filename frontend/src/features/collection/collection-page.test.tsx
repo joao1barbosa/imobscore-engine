@@ -3,7 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { useSessionStore } from "@/stores/session-store";
 import { server } from "@/test/setup";
@@ -48,9 +56,30 @@ async function fillForm() {
   await userEvent.click(screen.getByRole("radio", { name: /Família/ }));
 }
 
+// O jsdom não implementa `scrollIntoView`: ele é simulado, para o teste
+// conferir qual seção do formulário foi levada ao centro da tela.
+const scrolled: Element[] = [];
+const scrollIntoView = vi.fn(function (this: Element) {
+  scrolled.push(this);
+});
+
+beforeAll(() => {
+  Element.prototype.scrollIntoView = scrollIntoView;
+});
+
+beforeEach(() => {
+  scrollIntoView.mockClear();
+  scrolled.length = 0;
+});
+
 describe("telas da coleta", () => {
   beforeEach(() => {
     useSessionStore.getState().reset();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("leva da tela inicial ao formulário", async () => {
@@ -222,6 +251,50 @@ describe("telas da coleta", () => {
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(useSessionStore.getState().sessionId).toBeNull(),
+    );
+  });
+
+  it("'Quero participar' volta ao topo da tela", async () => {
+    renderPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: copy.collection.welcome.start }),
+    );
+
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it("sem o consentimento, o erro aparece na seção do consentimento", async () => {
+    renderPage();
+    await openForm();
+
+    await userEvent.click(screen.getByRole("radio", { name: /Família/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: copy.collection.submit }),
+    );
+
+    expect(
+      await screen.findByText(copy.collection.validation.consent),
+    ).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    expect(scrolled[0]).toContainElement(screen.getByRole("checkbox"));
+  });
+
+  it("sem a persona, o erro aparece na seção da persona", async () => {
+    renderPage();
+    await openForm();
+
+    await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(
+      screen.getByRole("button", { name: copy.collection.submit }),
+    );
+
+    expect(
+      await screen.findByText(copy.collection.validation.persona),
+    ).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    expect(scrolled[0]).toContainElement(
+      screen.getByRole("radio", { name: /Família/ }),
     );
   });
 });
