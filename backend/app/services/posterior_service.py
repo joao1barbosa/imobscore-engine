@@ -204,7 +204,10 @@ def _from_row(row: Posterior) -> MCMCResult:
             ess_min=row.ess_min,
             step_size=row.step_size,
             elapsed_ms=row.elapsed_ms,
-            ok=is_ok(row.accept_rate, row.rhat_max, row.ess_min),
+            # Sem pares, a linha guarda a amostragem da priori, com aceitação 1,0,
+            # que o critério do motor recusa; a interface 5.10 diz que aí o `ok` é
+            # verdadeiro.
+            ok=row.n_comparisons == 0 or is_ok(row.accept_rate, row.rhat_max, row.ess_min),
         ),
     )
 

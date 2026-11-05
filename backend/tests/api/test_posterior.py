@@ -148,3 +148,17 @@ def test_coleta_nao_roda_o_mcmc(client: TestClient, seeded: Session) -> None:
 
     assert response.status_code == 200
     assert response.json()["diagnostics"] is None
+
+
+def test_posterior_sem_pares_continua_ok_na_segunda_leitura(
+    client: TestClient, seeded: Session
+) -> None:
+    session_id = start_session(client)
+
+    primeira = client.get(f"/api/v1/sessions/{session_id}/posterior", params={"n": 0})
+    segunda = client.get(f"/api/v1/sessions/{session_id}/posterior", params={"n": 0})
+
+    assert primeira.status_code == 200
+    assert segunda.status_code == 200
+    assert primeira.json()["diagnostics"]["ok"] is True
+    assert segunda.json()["diagnostics"]["ok"] is True
