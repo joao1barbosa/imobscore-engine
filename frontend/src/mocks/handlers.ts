@@ -29,8 +29,8 @@ const PERSONAS = [
     demo_defaults: {
       city: "Goiânia",
       purpose: "sale",
-      price_min: 250000,
-      price_max: 700000,
+      price_min: 200000,
+      price_max: 600000,
     },
   },
   {
@@ -104,23 +104,32 @@ export const handlers: HttpHandler[] = [
 
   http.get("/api/v1/meta/personas", () => HttpResponse.json(PERSONAS)),
 
-  http.post("/api/v1/sessions", () =>
-    HttpResponse.json(
+  http.post("/api/v1/sessions", async ({ request }) => {
+    const body = (await request.json()) as {
+      mode?: string;
+      price_min?: number;
+      price_max?: number;
+      persona_slug?: string;
+    };
+    const mode = body.mode ?? "collection";
+    const targetPairs = mode === "collection" ? 25 : mode === "demo" ? 3 : 8;
+
+    return HttpResponse.json(
       {
         id: SESSION_ID,
-        mode: "collection",
+        mode,
         city: SEGMENT.city,
         purpose: SEGMENT.purpose,
-        price_min: "350000.00",
-        price_max: "900000.00",
-        persona_slug: "familia",
-        target_pairs: 25,
+        price_min: String(body.price_min ?? 350000),
+        price_max: String(body.price_max ?? 900000),
+        persona_slug: body.persona_slug ?? "familia",
+        target_pairs: targetPairs,
         answered: 0,
         status: "comparing",
       },
       { status: 201 },
-    ),
-  ),
+    );
+  }),
 
   http.get("/api/v1/sessions/:sessionId", () =>
     HttpResponse.json({

@@ -1,22 +1,23 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { CollectionPage } from "@/features/collection/collection-page";
+import { DemoPage } from "@/features/demo/demo-page";
+import { HomePage } from "@/features/home/home-page";
+import { OnboardingPage } from "@/features/onboarding/onboarding-page";
+import { useSessionStore } from "@/stores/session-store";
 import { Layout } from "./layout";
 import { Providers } from "./providers";
 
 const ROUTE_HOME = "/";
 const ROUTE_COLLECTION = "/coleta";
+const ROUTE_ONBOARDING = "/comecar";
+const ROUTE_DEMO = "/demo";
+const ROUTE_EXPERIMENT = "/experimento";
 
-// Rotas do esqueleto. As telas definitivas chegam nas tarefas seguintes.
-const APP_ROUTES = [
-  ROUTE_HOME,
-  "/comecar",
-  "/demo",
-  "/comparar",
-  "/feed",
-  "/modelo",
-  "/experimento",
-] as const;
+// As telas que só existem com uma sessão guardada. As telas definitivas
+// chegam nas tarefas E12 e E13.
+const PROTECTED_ROUTES = ["/comparar", "/feed", "/modelo"] as const;
 
 /**
  * Placeholder temporário: mostra o nome da rota até a tela real existir.
@@ -26,20 +27,44 @@ export function Placeholder({ name }: { name: string }) {
   return <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>;
 }
 
+/**
+ * As telas que dependem de uma sessão. Sem `sessionId` guardado, a pessoa vai
+ * para o onboarding, que cria a sessão.
+ */
+function RequireSession({ children }: { children: ReactNode }) {
+  const sessionId = useSessionStore((state) => state.sessionId);
+
+  if (!sessionId) {
+    return <Navigate to={ROUTE_ONBOARDING} replace />;
+  }
+
+  return children;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route path={ROUTE_HOME} element={<Layout />}>
-        <Route index element={<Placeholder name={ROUTE_HOME} />} />
+        <Route index element={<HomePage />} />
         <Route path={ROUTE_COLLECTION.slice(1)} element={<CollectionPage />} />
-        {APP_ROUTES.filter((route) => route !== ROUTE_HOME).map((route) => (
+        <Route path={ROUTE_ONBOARDING.slice(1)} element={<OnboardingPage />} />
+        <Route path={ROUTE_DEMO.slice(1)} element={<DemoPage />} />
+        {PROTECTED_ROUTES.map((route) => (
           <Route
             key={route}
             path={route.slice(1)}
-            element={<Placeholder name={route} />}
+            element={
+              <RequireSession>
+                <Placeholder name={route} />
+              </RequireSession>
+            }
           />
         ))}
-        <Route path="*" element={<Placeholder name={ROUTE_HOME} />} />
+        <Route
+          path={ROUTE_EXPERIMENT.slice(1)}
+          element={<Placeholder name={ROUTE_EXPERIMENT} />}
+        />
+        <Route path="*" element={<HomePage />} />
       </Route>
     </Routes>
   );
