@@ -144,4 +144,84 @@ describe("telas da coleta", () => {
       await screen.findByText(copy.collection.thanks.body(25)),
     ).toBeInTheDocument();
   });
+
+  it("502 mantém a sessão guardada e mostra a mensagem", async () => {
+    server.use(
+      http.get(
+        "/api/v1/sessions/:sessionId",
+        () => new HttpResponse(null, { status: 502 }),
+      ),
+    );
+    useSessionStore.setState({ sessionId: SESSION.id, mode: "collection" });
+    renderPage();
+
+    expect(
+      await screen.findByText(copy.collection.loadError.title),
+    ).toBeInTheDocument();
+    expect(useSessionStore.getState().sessionId).toBe(SESSION.id);
+  });
+
+  it("falha de rede mantém a sessão guardada e mostra a mensagem", async () => {
+    server.use(
+      http.get("/api/v1/sessions/:sessionId", () => HttpResponse.error()),
+    );
+    useSessionStore.setState({ sessionId: SESSION.id, mode: "collection" });
+    renderPage();
+
+    expect(
+      await screen.findByText(copy.collection.loadError.title),
+    ).toBeInTheDocument();
+    expect(useSessionStore.getState().sessionId).toBe(SESSION.id);
+  });
+
+  it("depois de um erro, tentar de novo leva aos pares", async () => {
+    let chamadas = 0;
+    server.use(
+      http.get("/api/v1/sessions/:sessionId", () => {
+        chamadas += 1;
+        if (chamadas === 1) {
+          return new HttpResponse(null, { status: 502 });
+        }
+        return HttpResponse.json(SESSION);
+      }),
+    );
+    useSessionStore.setState({ sessionId: SESSION.id, mode: "collection" });
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: copy.common.retry }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: copy.compare.question }),
+    ).toBeInTheDocument();
+    expect(useSessionStore.getState().sessionId).toBe(SESSION.id);
+  });
+
+  it("404 session_not_found limpa a sessão e volta à tela inicial", async () => {
+    server.use(
+      http.get("/api/v1/sessions/:sessionId", () =>
+        HttpResponse.json(
+          {
+            detail: {
+              code: "session_not_found",
+              message: "Não encontramos esta sessão.",
+            },
+          },
+          { status: 404 },
+        ),
+      ),
+    );
+    useSessionStore.setState({ sessionId: SESSION.id, mode: "collection" });
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: copy.collection.welcome.title,
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(useSessionStore.getState().sessionId).toBeNull(),
+    );
+  });
 });

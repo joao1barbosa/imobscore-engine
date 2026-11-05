@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import { ApiRequestError } from "@/api/client";
 import {
   metaOptionsQuery,
   metaPersonasQuery,
@@ -48,12 +49,17 @@ export function CollectionPage() {
         ? "thanks"
         : "pairs";
 
-  // A sessão guardada não existe mais: ela é limpa e a tela inicial volta.
+  // A sessão guardada só é limpa quando ela não existe mais no servidor. Um
+  // erro de rede ou do servidor não pode apagar o progresso da pessoa.
+  const sessionMissing =
+    sessionState.error instanceof ApiRequestError &&
+    sessionState.error.code === "session_not_found";
+
   useEffect(() => {
-    if (hasStoredSession && sessionState.isError) {
+    if (hasStoredSession && sessionMissing) {
       reset();
     }
-  }, [hasStoredSession, reset, sessionState.isError]);
+  }, [hasStoredSession, reset, sessionMissing]);
 
   const phase: Phase =
     localPhase === "welcome" && storedPhase !== "none"
@@ -80,6 +86,26 @@ export function CollectionPage() {
   const metaFailed = optionsState.isError || personasState.isError;
   const metaEmpty =
     !metaPending && !metaFailed && (!segment || personas.length === 0);
+
+  // A sessão guardada não respondeu: o progresso fica guardado e a pessoa
+  // pode tentar de novo, em vez de voltar para a tela inicial.
+  if (hasStoredSession && sessionState.isError && !sessionMissing) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <PageHeader />
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-5 md:gap-6 md:py-10">
+          <CollectionMessage
+            tone="error"
+            title={copy.collection.loadError.title}
+            description={copy.collection.loadError.description}
+            onRetry={() => {
+              void sessionState.refetch();
+            }}
+          />
+        </main>
+      </div>
+    );
+  }
 
   if (phase === "pairs" && sessionId) {
     return (
