@@ -32,7 +32,7 @@ Cores fixas por método, em todo gráfico: `bayes` `var(--chart-1)`, `mle` `var(
 | `ExperimentSummary.simulated` | Aviso `experiment.simulated` | — |
 | `participants` | Texto sobre o método | `copy.experiment.how(n)` |
 | `rows[].method` | Série e linha da tabela | `copy.experiment.methods[method]` |
-| `rows[].n_train` | Eixo X (3, 5, 10, 15) e colunas da tabela | `copy.experiment.table.pairs(n)` |
+| `rows[].n_train` | Eixo X (3, 5, 10) e colunas da tabela | `copy.experiment.table.pairs(n)` |
 | `rows[].acc_mean`, `acc_sd` | Linha e faixa; tabela | Porcentagem inteira |
 | `rows[].ll_mean` | Tabela | Duas casas, com `Intl.NumberFormat("pt-BR")` |
 | `per_participant[].participant_code`, `method`, `acc_mean` | Barras | Código; porcentagem inteira |
@@ -58,7 +58,7 @@ Cores fixas por método, em todo gráfico: `bayes` `var(--chart-1)`, `mle` `var(
 `common.nav.*`, `common.appName`, `common.demoCatalog`, `common.retry`; `experiment.*`.
 
 ## Critérios de aceite visual (lista verificável)
-- [ ] O eixo X da curva tem 3, 5, 10 e 15 pares, sem 25.
+- [ ] O eixo X da curva tem 3, 5 e 10 pares, sem 15, 20 ou 25.
 - [ ] Cada método mantém a mesma cor na curva e nas barras, com legenda nos dois gráficos.
 - [ ] `simulated = true` mostra o aviso no topo, com ícone e texto.
 - [ ] `run_id = null` mostra o estado vazio, sem gráficos.

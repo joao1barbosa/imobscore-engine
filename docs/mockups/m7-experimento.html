@@ -98,12 +98,12 @@ const METHODS = [
   { key: "persona", label: "Média da persona", color: "--chart-3" },
   { key: "equal", label: "Pesos iguais", color: "--chart-4" },
 ];
-const NT = [3, 5, 10, 15];
+const NT = [3, 5, 10];
 const ROWS = {
-  bayes: { acc: [.66, .69, .72, .74], sd: [.07, .06, .06, .05], ll: [.64, .61, .57, .54] },
-  mle: { acc: [.55, .60, .68, .72], sd: [.09, .08, .06, .06], ll: [.86, .78, .63, .57] },
-  persona: { acc: [.63, .63, .63, .63], sd: [.07, .07, .07, .07], ll: [.66, .66, .66, .66] },
-  equal: { acc: [.58, .58, .58, .58], sd: [.08, .08, .08, .08], ll: [.69, .69, .69, .69] },
+  bayes: { acc: [.66, .69, .72], sd: [.07, .06, .06], ll: [.64, .61, .57] },
+  mle: { acc: [.55, .60, .68], sd: [.09, .08, .06], ll: [.86, .78, .63] },
+  persona: { acc: [.63, .63, .63], sd: [.07, .07, .07], ll: [.66, .66, .66] },
+  equal: { acc: [.58, .58, .58], sd: [.08, .08, .08], ll: [.69, .69, .69] },
 };
 const PARTS = (prefix) => [["01", .78, .62, .70, .60], ["02", .72, .58, .64, .56], ["03", .64, .60, .66, .62], ["04", .70, .62, .58, .54], ["05", .66, .54, .60, .58], ["06", .68, .64, .62, .56]].map(([c, ...v]) => ({ code: prefix + c, v }));
 const OPTS = { active: "experiment", width: "max-w-5xl" };
@@ -111,7 +111,7 @@ const pct = (v) => `${Math.round(v * 100)}%`;
 const panel = (title, subtitle, inner) => `<section class="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-sm md:p-6"><div><h2 class="text-lg font-semibold">${title}</h2>${subtitle ? `<p class="text-sm text-muted-foreground">${subtitle}</p>` : ""}</div>${inner}</section>`;
 const legend = `<div class="flex flex-wrap gap-x-4 gap-y-1">${METHODS.map((m) => `<span class="inline-flex items-center gap-1.5 text-sm text-muted-foreground"><span class="size-2.5 rounded-full" style="background:var(${m.color})"></span>${m.label}</span>`).join("")}</div>`;
 const intro = `<div class="flex flex-col gap-1"><h1 class="text-2xl font-semibold tracking-tight md:text-3xl">O experimento</h1><p class="text-muted-foreground md:text-lg">Com poucas escolhas, qual método acerta mais a preferência de cada pessoa?</p></div>`;
-const how = (n) => `<p class="text-sm text-muted-foreground">${n} participantes. Cada um respondeu a 25 pares aleatórios: até 15 treinam os métodos, e 10 ficam de fora para o teste.</p>`;
+const how = (n) => `<p class="text-sm text-muted-foreground">${n} participantes. Cada um respondeu a pelo menos 20 pares aleatórios: até 10 treinam os métodos, e 10 ficam de fora para o teste.</p>`;
 const simulatedBanner = `<p role="alert" class="flex items-start gap-2 rounded-lg border border-destructive bg-card p-3 text-sm font-medium"><i data-lucide="triangle-alert" class="mt-0.5 text-destructive"></i>Dados simulados: estes resultados não vêm de pessoas reais.</p>`;
 const tables = `<div class="overflow-x-auto"><table class="w-full min-w-[440px] text-left text-sm tabular-nums"><thead class="text-muted-foreground"><tr><th class="py-1 font-medium">Método</th>${NT.map((n) => `<th class="font-medium">${n} pares</th>`).join("")}</tr></thead>
   <tbody>${METHODS.map((m) => `<tr class="border-t"><td class="py-1.5 pr-2">${m.label}</td>${ROWS[m.key].acc.map((a, i) => `<td>${pct(a)} <span class="text-muted-foreground">· ${dec(ROWS[m.key].ll[i], 2)}</span></td>`).join("")}</tr>`).join("")}</tbody></table></div>
@@ -129,7 +129,7 @@ const SCREENS = {
 };
 function drawLines(el) {
   const width = el.clientWidth, height = width < 500 ? 240 : 320, left = 38, right = 14, top = 8, bottom = 38;
-  const lo = .4, hi = .9, x = (n) => left + ((n - 3) / 12) * (width - left - right), y = (v) => top + ((hi - v) / (hi - lo)) * (height - top - bottom);
+  const lo = .4, hi = .9, x = (n) => left + ((n - 3) / 7) * (width - left - right), y = (v) => top + ((hi - v) / (hi - lo)) * (height - top - bottom);
   const textC = css("--muted-foreground"), grid = css("--border"), surf = css("--card");
   let s = `<svg width="${width}" height="${height}" role="img" aria-label="Acurácia de cada método por número de pares de treino">`;
   [.4, .5, .6, .7, .8, .9].forEach((t) => { s += `<line x1="${left}" x2="${width - right}" y1="${y(t)}" y2="${y(t)}" stroke="${grid}"/><text x="${left - 6}" y="${y(t) + 4}" text-anchor="end" font-size="12" fill="${textC}">${pct(t)}</text>`; });
