@@ -175,9 +175,8 @@ export const traceQuery = (sessionId: string, n: number, feature: string) =>
     },
   });
 
-/** Cria a sessão a partir do onboarding. */ export async function createSession(
-  body: SessionCreate,
-): Promise<SessionOut> {
+/** Cria a sessão a partir do onboarding. */
+export async function createSession(body: SessionCreate): Promise<SessionOut> {
   const { data, error, response } = await client.POST("/sessions", { body });
   if (data === undefined) {
     throw toApiError(response.status, error);

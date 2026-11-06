@@ -84,8 +84,19 @@ export function TraceChart({ sessionId, n, features }: TraceChartProps) {
   });
 
   const values = chains.flat();
-  const low = values.length > 0 ? Math.floor(Math.min(...values)) : 0;
-  const high = values.length > 0 ? Math.ceil(Math.max(...values)) : 1;
+  const min = values.length > 0 ? Math.min(...values) : 0;
+  const max = values.length > 0 ? Math.max(...values) : 1;
+  // O eixo do zero tem marcas de distância igual: o passo é 1 quando o
+  // intervalo é curto e 2 quando é longo.
+  const step = Math.ceil(max) - Math.floor(min) <= 6 ? 1 : 2;
+  const low = Math.floor(min / step) * step;
+  const high = Math.ceil(max / step) * step;
+  const ticks: number[] = [];
+
+  for (let value = low; value <= high; value += step) {
+    ticks.push(value);
+  }
+
   const chartWidth = width || 640;
   const selectedLabel =
     features.find((item) => item.key === feature)?.label ?? "";
@@ -153,10 +164,16 @@ export function TraceChart({ sessionId, n, features }: TraceChartProps) {
           margin={{ top: 6, right: 8, bottom: 22, left: 0 }}
         >
           <CartesianGrid vertical={false} stroke="var(--border)" />
-          <XAxis dataKey="index" type="number" hide />
+          <XAxis
+            dataKey="index"
+            type="number"
+            domain={["dataMin", "dataMax"]}
+            hide
+          />
           <YAxis
             width={30}
             domain={[low, high]}
+            ticks={ticks}
             tickFormatter={(value: number) =>
               value < 0 ? `−${Math.abs(value)}` : String(value)
             }
