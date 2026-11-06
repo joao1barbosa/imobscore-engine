@@ -36,7 +36,7 @@ const percentFormatter = new Intl.NumberFormat("pt-BR", {
 
 /**
  * As barras da acurácia de cada participante, com as quatro barras dos métodos
- * empilhadas na linha da pessoa.
+ * agrupadas na linha da pessoa.
  */
 export function ParticipantBars({ rows }: ParticipantBarsProps) {
   const containerRef = useRef<HTMLDivElement>(null);

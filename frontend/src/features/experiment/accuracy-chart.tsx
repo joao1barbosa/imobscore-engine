@@ -146,6 +146,7 @@ export function AccuracyChart({ rows }: AccuracyChartProps) {
           <YAxis
             type="number"
             domain={Y_DOMAIN}
+            allowDataOverflow
             ticks={Y_TICKS}
             width={42}
             tickFormatter={(value: number) => percentFormatter.format(value)}
