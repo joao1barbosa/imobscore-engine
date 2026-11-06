@@ -51,13 +51,13 @@ describe("rotas do app", () => {
     ).toBeInTheDocument();
   });
 
-  it("com sessão, uma tela protegida mostra a tela", () => {
+  it("com sessão, uma tela protegida mostra a tela", async () => {
     useSessionStore.setState({ sessionId: SESSION_ID, mode: "product" });
 
     renderRoute("/modelo");
 
     expect(
-      screen.getByRole("heading", { name: "/modelo" }),
+      await screen.findByRole("heading", { name: copy.modelPanel.title }),
     ).toBeInTheDocument();
   });
 
@@ -71,14 +71,14 @@ describe("rotas do app", () => {
     ).toBeInTheDocument();
   });
 
-  it("monta o app inteiro, com os providers, em /modelo", () => {
+  it("monta o app inteiro, com os providers, em /modelo", async () => {
     useSessionStore.setState({ sessionId: SESSION_ID, mode: "product" });
     window.history.pushState({}, "", "/modelo");
 
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { name: "/modelo" }),
+      await screen.findByRole("heading", { name: copy.modelPanel.title }),
     ).toBeInTheDocument();
   });
 });

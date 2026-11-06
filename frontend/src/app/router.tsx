@@ -6,6 +6,7 @@ import { ComparePage } from "@/features/compare/compare-page";
 import { DemoPage } from "@/features/demo/demo-page";
 import { FeedPage } from "@/features/feed/feed-page";
 import { HomePage } from "@/features/home/home-page";
+import { ModelPanelPage } from "@/features/model-panel/model-panel-page";
 import { OnboardingPage } from "@/features/onboarding/onboarding-page";
 import { useSessionStore } from "@/stores/session-store";
 import { Layout } from "./layout";
@@ -19,10 +20,6 @@ const ROUTE_COMPARE = "/comparar";
 const ROUTE_FEED = "/feed";
 const ROUTE_MODEL = "/modelo";
 const ROUTE_EXPERIMENT = "/experimento";
-
-// As telas que só existem com uma sessão guardada. O painel do modelo chega
-// na tarefa E13.
-const PROTECTED_ROUTES = [ROUTE_MODEL] as const;
 
 /**
  * Placeholder temporário: mostra o nome da rota até a tela real existir.
@@ -70,17 +67,14 @@ export function AppRoutes() {
             </RequireSession>
           }
         />
-        {PROTECTED_ROUTES.map((route) => (
-          <Route
-            key={route}
-            path={route.slice(1)}
-            element={
-              <RequireSession>
-                <Placeholder name={route} />
-              </RequireSession>
-            }
-          />
-        ))}
+        <Route
+          path={ROUTE_MODEL.slice(1)}
+          element={
+            <RequireSession>
+              <ModelPanelPage />
+            </RequireSession>
+          }
+        />
         <Route
           path={ROUTE_EXPERIMENT.slice(1)}
           element={<Placeholder name={ROUTE_EXPERIMENT} />}

@@ -211,6 +211,134 @@ const PAIR = {
   listing_b: LISTING_B,
 };
 
+/** As doze características do motor, na ordem de `FEATURE_KEYS`. */
+const FEATURES = [
+  {
+    key: "log_price",
+    label: "Preço",
+    text_high: "mais caro que o típico",
+    text_low: "mais barato que o típico",
+  },
+  {
+    key: "log_area",
+    label: "Área",
+    text_high: "mais espaçoso",
+    text_low: "mais compacto",
+  },
+  {
+    key: "bedrooms",
+    label: "Quartos",
+    text_high: "mais quartos",
+    text_low: "menos quartos",
+  },
+  {
+    key: "bedrooms_sq",
+    label: "Distância de 3 quartos",
+    text_high: "longe de 3 quartos",
+    text_low: "perto de 3 quartos",
+  },
+  {
+    key: "bathrooms",
+    label: "Banheiros",
+    text_high: "mais banheiros",
+    text_low: "menos banheiros",
+  },
+  {
+    key: "parking",
+    label: "Vagas",
+    text_high: "mais vagas",
+    text_low: "menos vagas",
+  },
+  {
+    key: "dist_center",
+    label: "Distância do centro",
+    text_high: "longe do centro",
+    text_low: "perto do centro",
+  },
+  {
+    key: "age",
+    label: "Idade",
+    text_high: "mais antigo",
+    text_low: "mais novo",
+  },
+  {
+    key: "is_house",
+    label: "Casa",
+    text_high: "é casa",
+    text_low: "é apartamento",
+  },
+  {
+    key: "leisure",
+    label: "Lazer",
+    text_high: "mais lazer",
+    text_low: "menos lazer",
+  },
+  {
+    key: "pet",
+    label: "Aceita pet",
+    text_high: "aceita pet",
+    text_low: "não aceita pet",
+  },
+  {
+    key: "doorman",
+    label: "Portaria 24 h",
+    text_high: "tem portaria 24 h",
+    text_low: "sem portaria",
+  },
+];
+
+/** Os pesos da demo: a priori da persona de Família e a posteriori. */
+const WEIGHTS = [
+  { key: "log_price", prior: -1, post: -0.91, lo: -2.53, hi: 0.63 },
+  { key: "log_area", prior: 0.8, post: 0.69, lo: -0.89, hi: 2.22 },
+  { key: "bedrooms", prior: 0.6, post: 0.59, lo: -1.09, hi: 2.27 },
+  { key: "bedrooms_sq", prior: -0.4, post: -0.39, lo: -2.02, hi: 1.29 },
+  { key: "bathrooms", prior: 0.4, post: 0.13, lo: -1.45, hi: 1.76 },
+  { key: "parking", prior: 0.5, post: 0.25, lo: -1.35, hi: 1.87 },
+  { key: "dist_center", prior: -0.3, post: -1.13, lo: -2.54, hi: 0.19 },
+  { key: "age", prior: -0.3, post: -0.22, lo: -1.81, hi: 1.37 },
+  { key: "is_house", prior: 0.5, post: 0.63, lo: -0.86, hi: 2.14 },
+  { key: "leisure", prior: 0.4, post: 0.04, lo: -1.46, hi: 1.47 },
+  { key: "pet", prior: 0.3, post: 0.74, lo: -0.78, hi: 2.3 },
+  { key: "doorman", prior: 0.4, post: 0.77, lo: -0.76, hi: 2.27 },
+];
+
+const POSTERIOR = {
+  n_comparisons: 3,
+  weights: WEIGHTS.map((weight) => {
+    const feature = FEATURES.find((item) => item.key === weight.key);
+    return {
+      feature_key: weight.key,
+      label: feature?.label ?? weight.key,
+      prior_mean: weight.prior,
+      prior_sd: 1,
+      post_mean: weight.post,
+      post_sd: 0.62,
+      ci_low: weight.lo,
+      ci_high: weight.hi,
+    };
+  }),
+  diagnostics: {
+    accept_rate: 0.27,
+    rhat_max: 1.01,
+    ess_min: 612,
+    step_size: 0.42,
+    elapsed_ms: 190,
+    ok: true,
+  },
+};
+
+/** Quatro cadeias de 250 pontos, sem aleatoriedade. */
+function traceChains(): number[][] {
+  return [0, 1, 2, 3].map((chain) =>
+    Array.from({ length: 250 }, (_, index) => {
+      const base = Math.sin((index + chain * 12) / 9) * 0.8;
+      const drift = (index / 250) * (chain - 1.5) * 0.2;
+      return Number((base + drift).toFixed(4));
+    }),
+  );
+}
+
 const SESSION_ID = "8b7a3d21-4c6e-4a1e-8f2c-000000000000";
 
 export const handlers: HttpHandler[] = [
@@ -219,6 +347,8 @@ export const handlers: HttpHandler[] = [
   ),
 
   http.get("/api/v1/meta/personas", () => HttpResponse.json(PERSONAS)),
+
+  http.get("/api/v1/meta/features", () => HttpResponse.json(FEATURES)),
 
   http.post("/api/v1/sessions", async ({ request }) => {
     const body = (await request.json()) as {
@@ -274,6 +404,19 @@ export const handlers: HttpHandler[] = [
       next_offset: null,
       method: "bayes",
       n_comparisons: at,
+    });
+  }),
+
+  http.get("/api/v1/sessions/:sessionId/posterior", () =>
+    HttpResponse.json(POSTERIOR),
+  ),
+
+  http.get("/api/v1/sessions/:sessionId/posterior/trace", ({ request }) => {
+    const feature =
+      new URL(request.url).searchParams.get("feature") ?? "dist_center";
+    return HttpResponse.json({
+      feature_key: feature,
+      chains: traceChains(),
     });
   }),
 

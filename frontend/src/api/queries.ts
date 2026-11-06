@@ -15,6 +15,11 @@ import type { components } from "./schema";
 
 export type FeedItem = components["schemas"]["FeedItem"];
 export type FeedPage = components["schemas"]["FeedPage"];
+export type Diagnostics = components["schemas"]["Diagnostics"];
+export type FeatureOut = components["schemas"]["FeatureOut"];
+export type PosteriorOut = components["schemas"]["PosteriorOut"];
+export type TraceOut = components["schemas"]["TraceOut"];
+export type WeightOut = components["schemas"]["WeightOut"];
 
 /** As faixas de preço do catálogo. Não mudam durante a sessão. */
 export const metaOptionsQuery = queryOptions({
@@ -112,8 +117,67 @@ export const feedQuery = (
     },
   });
 
-/** Cria a sessão a partir do onboarding. */
-export async function createSession(body: SessionCreate): Promise<SessionOut> {
+/** As doze características do motor, com o texto do cartão. */
+export const metaFeaturesQuery = queryOptions({
+  queryKey: ["meta", "features"],
+  queryFn: async (): Promise<FeatureOut[]> => {
+    const { data, error, response } = await client.GET("/meta/features");
+    if (data === undefined) {
+      throw toApiError(response.status, error);
+    }
+    return data;
+  },
+  staleTime: Infinity,
+});
+
+/**
+ * A posteriori da sessão: os doze pesos, com a priori da persona e os
+ * diagnósticos. Sem `n`, a API usa todos os pares respondidos.
+ */
+export const posteriorQuery = (sessionId: string, n?: number) =>
+  queryOptions({
+    queryKey: ["posterior", sessionId, n ?? null],
+    queryFn: async (): Promise<PosteriorOut> => {
+      const { data, error, response } = await client.GET(
+        "/sessions/{session_id}/posterior",
+        {
+          params: {
+            path: { session_id: sessionId },
+            query: n === undefined ? {} : { n },
+          },
+        },
+      );
+      if (data === undefined) {
+        throw toApiError(response.status, error);
+      }
+      return data;
+    },
+  });
+
+/** O traço das quatro primeiras cadeias de um peso. */
+export const traceQuery = (sessionId: string, n: number, feature: string) =>
+  queryOptions({
+    queryKey: ["trace", sessionId, n, feature],
+    queryFn: async (): Promise<TraceOut> => {
+      const { data, error, response } = await client.GET(
+        "/sessions/{session_id}/posterior/trace",
+        {
+          params: {
+            path: { session_id: sessionId },
+            query: { feature, n },
+          },
+        },
+      );
+      if (data === undefined) {
+        throw toApiError(response.status, error);
+      }
+      return data;
+    },
+  });
+
+/** Cria a sessão a partir do onboarding. */ export async function createSession(
+  body: SessionCreate,
+): Promise<SessionOut> {
   const { data, error, response } = await client.POST("/sessions", { body });
   if (data === undefined) {
     throw toApiError(response.status, error);
