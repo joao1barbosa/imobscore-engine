@@ -341,6 +341,71 @@ function traceChains(): number[][] {
 
 const SESSION_ID = "8b7a3d21-4c6e-4a1e-8f2c-000000000000";
 
+/** A rodada simulada do experimento, com treino de 3, 5 e 10 pares. */
+const EXPERIMENT_ROWS = [
+  {
+    method: "bayes",
+    acc: [0.66, 0.69, 0.72],
+    sd: [0.07, 0.06, 0.06],
+    ll: [0.64, 0.61, 0.57],
+  },
+  {
+    method: "mle",
+    acc: [0.55, 0.6, 0.68],
+    sd: [0.09, 0.08, 0.06],
+    ll: [0.86, 0.78, 0.63],
+  },
+  {
+    method: "persona",
+    acc: [0.63, 0.63, 0.63],
+    sd: [0.07, 0.07, 0.07],
+    ll: [0.66, 0.66, 0.66],
+  },
+  {
+    method: "equal",
+    acc: [0.58, 0.58, 0.58],
+    sd: [0.08, 0.08, 0.08],
+    ll: [0.69, 0.69, 0.69],
+  },
+];
+
+const EXPERIMENT_N_TRAIN = [3, 5, 10];
+
+const PARTICIPANT_ACC = [
+  [0.78, 0.62, 0.7, 0.6],
+  [0.72, 0.58, 0.64, 0.56],
+  [0.64, 0.6, 0.66, 0.62],
+  [0.7, 0.62, 0.58, 0.54],
+  [0.66, 0.54, 0.6, 0.58],
+  [0.68, 0.64, 0.62, 0.56],
+];
+
+const EXPERIMENT_METHODS = ["bayes", "mle", "persona", "equal"] as const;
+
+const EXPERIMENT_SUMMARY = {
+  run_id: "b7f1c0a4-2f1e-4c3a-9d2b-000000000001",
+  simulated: true,
+  participants: PARTICIPANT_ACC.length,
+  rows: EXPERIMENT_ROWS.flatMap((row) =>
+    EXPERIMENT_N_TRAIN.map((nTrain, index) => ({
+      method: row.method,
+      n_train: nTrain,
+      acc_mean: row.acc[index],
+      acc_sd: row.sd[index],
+      ll_mean: row.ll[index],
+      ll_sd: 0.05,
+      n_participants: PARTICIPANT_ACC.length,
+    })),
+  ),
+  per_participant: PARTICIPANT_ACC.flatMap((values, index) =>
+    EXPERIMENT_METHODS.map((method, methodIndex) => ({
+      participant_code: `P${String(index + 1).padStart(2, "0")}`,
+      method,
+      acc_mean: values[methodIndex],
+    })),
+  ),
+};
+
 export const handlers: HttpHandler[] = [
   http.get("/api/v1/meta/options", () =>
     HttpResponse.json({ segments: [SEGMENT] }),
@@ -419,6 +484,10 @@ export const handlers: HttpHandler[] = [
       chains: traceChains(),
     });
   }),
+
+  http.get("/api/v1/experiment/summary", () =>
+    HttpResponse.json(EXPERIMENT_SUMMARY),
+  ),
 
   http.post("/api/v1/sessions/:sessionId/comparisons/:position", () =>
     HttpResponse.json({

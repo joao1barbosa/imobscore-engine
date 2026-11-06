@@ -16,7 +16,10 @@ import type { components } from "./schema";
 export type FeedItem = components["schemas"]["FeedItem"];
 export type FeedPage = components["schemas"]["FeedPage"];
 export type Diagnostics = components["schemas"]["Diagnostics"];
+export type ExperimentRow = components["schemas"]["ExperimentRow"];
+export type ExperimentSummary = components["schemas"]["ExperimentSummary"];
 export type FeatureOut = components["schemas"]["FeatureOut"];
+export type ParticipantRow = components["schemas"]["ParticipantRow"];
 export type PosteriorOut = components["schemas"]["PosteriorOut"];
 export type TraceOut = components["schemas"]["TraceOut"];
 export type WeightOut = components["schemas"]["WeightOut"];
@@ -166,6 +169,27 @@ export const traceQuery = (sessionId: string, n: number, feature: string) =>
             path: { session_id: sessionId },
             query: { feature, n },
           },
+        },
+      );
+      if (data === undefined) {
+        throw toApiError(response.status, error);
+      }
+      return data;
+    },
+  });
+
+/**
+ * O resumo da rodada do experimento. Sem `run_id`, a API devolve a rodada mais
+ * recente; com `run_id = null` na resposta, ainda não há resultados.
+ */
+export const experimentQuery = (runId: string | null = null) =>
+  queryOptions({
+    queryKey: ["experiment", runId ?? "latest"],
+    queryFn: async (): Promise<ExperimentSummary> => {
+      const { data, error, response } = await client.GET(
+        "/experiment/summary",
+        {
+          params: { query: runId ? { run_id: runId } : {} },
         },
       );
       if (data === undefined) {

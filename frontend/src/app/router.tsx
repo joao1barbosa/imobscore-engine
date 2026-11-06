@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { CollectionPage } from "@/features/collection/collection-page";
 import { ComparePage } from "@/features/compare/compare-page";
 import { DemoPage } from "@/features/demo/demo-page";
+import { ExperimentPage } from "@/features/experiment/experiment-page";
 import { FeedPage } from "@/features/feed/feed-page";
 import { HomePage } from "@/features/home/home-page";
 import { ModelPanelPage } from "@/features/model-panel/model-panel-page";
@@ -75,10 +76,7 @@ export function AppRoutes() {
             </RequireSession>
           }
         />
-        <Route
-          path={ROUTE_EXPERIMENT.slice(1)}
-          element={<Placeholder name={ROUTE_EXPERIMENT} />}
-        />
+        <Route path={ROUTE_EXPERIMENT.slice(1)} element={<ExperimentPage />} />
         <Route path="*" element={<HomePage />} />
       </Route>
     </Routes>
