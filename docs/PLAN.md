@@ -761,7 +761,7 @@ No feed, a comparação lado a lado usa `persona` à esquerda e `bayes` à direi
 
 ### 5.9 Protocolo de avaliação (comando `evaluate`)
 
-1. Entram as sessões `collection` com pelo menos 20 pares respondidos. Os pares também são exportados para `data/collected/pairs.json` pelo comando `export`, e o `evaluate` aceita esse arquivo como entrada (`--from-json`). Assim a avaliação roda sem banco.
+1. Entram as sessões `collection` com pelo menos 20 pares respondidos e mediana de `response_ms` de pelo menos 1.000 ms. Os pares também são exportados para `data/collected/pairs.json` pelo comando `export`, e o `evaluate` aceita esse arquivo como entrada (`--from-json`). Assim a avaliação roda sem banco.
 2. Para cada participante, cada n\_train em {3, 5, 10} e cada `split_seed` de 0 a 19: sorteie 10 pares de teste. Os pares de treino são os n\_train primeiros dos que sobraram, em ordem embaralhada.
 3. Treine `mle` e `bayes` só com o treino. `equal` e `persona` não treinam, mas são avaliados nos mesmos pares de teste.
 4. Métricas no teste: **acurácia** (acerto quando p > 0,5; p = 0,5 vale meio acerto) e **perda logarítmica** (com p limitado a \[10⁻⁶, 1 − 10⁻⁶\]).
@@ -1294,7 +1294,7 @@ Cada tarefa é iniciada com o pedido padrão da seção 1.5. O campo **Arquivos*
     ]
   }
   ```
-  - **Regras do export:** só sessões `collection` com pelo menos 20 pares respondidos; cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
+  - **Regras do export:** só sessões `collection` com pelo menos 20 pares respondidos e mediana de `response_ms` desses pares de pelo menos 1.000 ms (abaixo disso, a pessoa não teve tempo de comparar os dois imóveis); cada sessão tem o próprio código; só pares respondidos, em ordem de `position`; `t_left` e `t_right` são as linhas de `raw_matrix` (antes da padronização); `center` e `scale` vêm de `feature_stats` do segmento.
   - **Verificação:** `make up` a partir de um clone limpo, seguido de `make seed`, sobe tudo; `curl http://localhost:8080/api/v1/health` responde ok; `make tunnel` gera um endereço, e um celular fora da rede local completa os 25 pares por ele; `make export` gera um JSON válido com esse participante. **João envia o link aos colegas às 18h**; o mesmo link serve para todos.
 
 * [ ] **E10 · API do feed, do modelo e do experimento** · sex 06/11 · depende de: A06 concluída em `docs/STATUS.md`
