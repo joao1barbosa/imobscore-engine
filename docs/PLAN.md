@@ -1133,7 +1133,7 @@ Claude constrói o motor e desenha as telas; o executor implementa o resto em pa
   - Problemas viram `FIX-n`, como na A-REV1.
 - [ ] **A08 · Experimento com dados reais** · dom 08/11, a partir das 12h · depende de: coleta encerrada, A07
   - Rodar `make evaluate`. Se houver menos de 5 participantes com pelo menos 20 pares, rodar também `simulate` e `evaluate` e deixar o painel com os dados reais, mais um aviso de quantos são.
-  - Escrever `docs/results.md` (até 1 página): número de participantes, tabela de acurácia e perda logarítmica por método em n\_train = 3, 5 e 15, se H1 e H2 se confirmaram e as limitações (seção 11 do guia).
+  - Escrever `docs/results.md` (até 1 página): número de participantes, tabela de acurácia e perda logarítmica por método em n\_train = 3, 5 e 10, se H1 e H2 se confirmaram e as limitações (seção 11 do guia).
   - **Checkpoint:** CP6.
 - [ ] **A09 · Revisão final e roteiro da demo** · seg 09/11 · depende de: E15
   - Rodar com João o roteiro manual offline da seção 9. Problemas bloqueantes viram `FIX-n` para a E16.
