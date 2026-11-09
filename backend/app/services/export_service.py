@@ -91,7 +91,9 @@ def pair_export(db: Session, comparison: Comparison) -> dict[str, Any]:
 
 def median_response_ms(comparisons: list[Comparison]) -> float | None:
     """A mediana do tempo de resposta dos pares, sem os que não têm tempo; None se não há nenhum."""
-    times = [comparison.response_ms for comparison in comparisons if comparison.response_ms]
+    times = [
+        comparison.response_ms for comparison in comparisons if comparison.response_ms is not None
+    ]
     if not times:
         return None
     return statistics.median(times)
