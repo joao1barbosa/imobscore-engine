@@ -42,4 +42,11 @@ Protocolo na seção 1.4 de `docs/PLAN.md`. Cada registro traz data, módulo, pe
 
 ## CP6 · Experimento real (A08) · dom 08/11
 
+- **Data:** 2026-11-09. **Módulo:** A08, com 31 participantes reais, `docs/results.md` e `data/results/`. **Guia:** seção 11.
+- **O que a curva de acurácia mostra?** Resposta certa: a porcentagem de acertos de cada método conforme o número de pares de treino. Claude completou: são acertos em 10 pares de teste nunca vistos; a forma das linhas é o resultado (a regressão logística se aproxima do motor, que é a H2); e a faixa de ±1 desvio é larga porque cada acerto vale 10 pontos, então a comparação justa é a pareada por pessoa. Na pergunta complementar, sobre por que a persona e os pesos iguais dão linhas retas, João acertou os pesos iguais, trocou "pares de treino" por "pares de teste" e não soube a persona. Claude explicou que nenhum dos dois aprende com as respostas, que os pesos da persona são o ponto de partida do motor, e que a distância entre as duas linhas mostra o quanto as escolhas acrescentam.
+- **Por que os pares da coleta são aleatórios?** Resposta parcial: para ver as escolhas e se o motor acerta. Claude completou com o motivo principal, a justiça: se o motor escolhesse os pares, os quatro métodos seriam avaliados num teste montado por um deles. Com pares aleatórios, todos são testados nos mesmos pares neutros. Na demo, o motor escolhe os pares porque ali o objetivo é aprender rápido.
+- **E se o MLE ganhar do bayesiano?** João não sabia. Claude explicou: o modelo é o mesmo, e o motor só acrescenta a priori da persona e a média das amostras, por isso a regressão logística é o controle. Se ela ganhasse, o acréscimo estaria atrapalhando, provavelmente por personas longe do gosto real, o que seria uma descoberta sobre as personas e não um defeito do método. Claude ligou isso aos dados: a persona tem log loss de 0,80, o que explica a H1 fraca. João refez a resposta com as próprias palavras, corretamente.
+- **Dúvidas respondidas:** por que as linhas da persona e dos pesos iguais são retas. Para a banca, João deve rever a seção 11.5 do guia (resultado negativo e o papel do controle).
+- **Entendido: sim**
+
 ## CP7 · Ensaio de banca (A09) · seg 09/11
