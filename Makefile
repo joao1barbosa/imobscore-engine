@@ -15,7 +15,7 @@ seed:     ## recria catálogo, personas e estatísticas
 demo:     ## sobe tudo, semeia se vazio e abre o modo demo
 	docker compose up -d --build
 	$(API) seed --if-empty --with-results
-	@xdg-open http://localhost:8080/demo 2>/dev/null || open http://localhost:8080/demo
+	@(xdg-open http://localhost:8080/demo || open http://localhost:8080/demo) >/dev/null 2>&1 &
 check:    ## lint, tipos e testes do back-end e do front-end
 	cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy app/engine && uv run pytest -q -m "not perf"
 	cd frontend && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:run
