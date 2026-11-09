@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import statistics
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,9 @@ COLLECTION_MODE = "collection"
 
 # Só entram no export as sessões da coleta com pelo menos 20 pares respondidos.
 MIN_ANSWERED_PAIRS = 20
+
+# Mediana abaixo disso indica escolhas feitas sem ler os cartões (decisão de 09/11).
+MIN_MEDIAN_RESPONSE_MS = 1000
 
 # São Paulo não tem horário de verão desde 2019, então o deslocamento é fixo.
 SAO_PAULO_TZ = timezone(timedelta(hours=-3))
@@ -85,6 +89,14 @@ def pair_export(db: Session, comparison: Comparison) -> dict[str, Any]:
     }
 
 
+def median_response_ms(comparisons: list[Comparison]) -> float | None:
+    """A mediana do tempo de resposta dos pares, sem os que não têm tempo; None se não há nenhum."""
+    times = [comparison.response_ms for comparison in comparisons if comparison.response_ms]
+    if not times:
+        return None
+    return statistics.median(times)
+
+
 def participant_export(
     db: Session, session: SessionModel, comparisons: list[Comparison]
 ) -> dict[str, Any]:
@@ -103,7 +115,10 @@ def participant_export(
 
 
 def export_participants(db: Session) -> list[dict[str, Any]]:
-    """Os participantes da coleta que responderam pelo menos 20 pares."""
+    """Os participantes da coleta com pelo menos 20 pares respondidos e mediana do tempo de
+    resposta de pelo menos 1.000 ms. Sem nenhum tempo registrado, não há mediana e a sessão
+    fica de fora.
+    """
     sessions = db.scalars(
         select(SessionModel)
         .where(SessionModel.mode == COLLECTION_MODE)
@@ -114,6 +129,9 @@ def export_participants(db: Session) -> list[dict[str, Any]]:
     for session in sessions:
         comparisons = answered_comparisons(db, session)
         if len(comparisons) < MIN_ANSWERED_PAIRS:
+            continue
+        median = median_response_ms(comparisons)
+        if median is None or median < MIN_MEDIAN_RESPONSE_MS:
             continue
         participants.append(participant_export(db, session, comparisons))
     return participants

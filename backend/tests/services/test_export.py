@@ -33,8 +33,12 @@ def add_collection(
     pending: int = 0,
     code: str = "P01",
     mode: str = "collection",
+    response_ms: int | None = None,
 ) -> SessionModel:
-    """Cria uma sessão com pares respondidos (e, se quiser, pendentes)."""
+    """Cria uma sessão com pares respondidos (e, se quiser, pendentes).
+
+    Sem `response_ms`, cada par leva 1000 + a posição em ms; com ele, todos levam o mesmo tempo.
+    """
     collection = mode == "collection"
     session = SessionModel(
         mode=mode,
@@ -63,7 +67,11 @@ def add_collection(
                 listing_b_id=right.id,
                 selection="random",
                 chosen=("A" if index % 2 == 0 else "B") if index < answered else None,
-                response_ms=1000 + index if index < answered else None,
+                response_ms=(
+                    (response_ms if response_ms is not None else 1000 + index)
+                    if index < answered
+                    else None
+                ),
             )
         )
     db.flush()
@@ -116,6 +124,23 @@ def test_export_traz_sessao_com_vinte_e_cinco_pares(seeded: Session) -> None:
 
     assert len(payload["participants"]) == 1
     assert len(payload["participants"][0]["pairs"]) == 25
+
+
+def test_export_ignora_sessao_com_mediana_abaixo_de_mil_ms(seeded: Session) -> None:
+    add_collection(seeded, answered=20, response_ms=999)
+
+    payload = build_export(seeded)
+
+    assert payload["participants"] == []
+
+
+def test_export_traz_sessao_com_mediana_de_mil_ms(seeded: Session) -> None:
+    add_collection(seeded, answered=20, response_ms=1000)
+
+    payload = build_export(seeded)
+
+    assert len(payload["participants"]) == 1
+    assert len(payload["participants"][0]["pairs"]) == 20
 
 
 def test_export_ignora_sessao_que_nao_e_da_coleta(seeded: Session) -> None:
