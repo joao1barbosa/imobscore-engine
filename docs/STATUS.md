@@ -16,6 +16,8 @@ Ambos os agentes acrescentam linhas; ninguém apaga (seção 1.3 de `docs/PLAN.m
 - Coleta · 2026-11-05 · Na conferência da FIX-11 no navegador local, o executor criou sem querer uma sessão `collection` (P01, `98b5cb36-0f2a-4556-9184-be99cb183c1a`), com um par pendente e nenhuma resposta: ela não entra no export, que só leva sessões com os 25 pares respondidos, e o `make seed` final a apaga. Nenhuma linha foi alterada à mão. O participante do celular sai com o código P02, a não ser que o `make seed` rode antes, que é o plano.
 - E15 · 2026-11-09 · Concluída em 2026-11-09, ver "Concluídas". **Concluída em 2026-11-09 (Q18 respondida).**
 
+- A09 · 2026-11-09 · Roteiro offline com o Wi-Fi desligado em espera, por decisão de João: ele faz depois, com `git pull` e `make up` com internet antes. O plano já prevê João repetir o roteiro em 10/11. O CP7 segue antes.
+
 ## Concluídas (ID · data · resumo da verificação)
 
 - E01 · 2026-11-03 · `make help` lista os 13 alvos; `docs/PLAN.md` idêntico ao arquivo fornecido (sha256); pastas da seção 3 criadas. PR aguardando a aprovação de João, ver Q1.
