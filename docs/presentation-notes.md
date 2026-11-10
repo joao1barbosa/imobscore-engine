@@ -86,3 +86,54 @@ Em 09/11, um pesquisador revisou a primeira versão do relatório. O relatório 
 - **"Por que Holm?"** São 12 testes. Sem correção, a chance de ao menos um falso positivo passa de 40%. O Holm controla esse erro e é menos conservador que o Bonferroni.
 - **"A análise foi pré-registrada?"** As hipóteses, os métodos, as métricas, o protocolo de sorteios e a regra de exclusão foram fixados antes. Os testes estatísticos foram escolhidos depois de ver os resultados descritivos, a pedido de um revisor. O relatório diz isso, e a correção sobre a família inteira de testes compensa parte do risco.
 - **"Não ser significativo quer dizer que não há diferença?"** Não. Com 31 pessoas e 10 pares de teste cada, diferenças de 2 a 3 pontos ficam no limite do que dá para detectar. O resultado é inconclusivo para acurácia, não uma prova de igualdade.
+
+## Bootstrap e tamanho de amostra (revisão de 10/11)
+
+O mesmo pesquisador sugeriu "extrapolar" as 31 respostas com técnicas de amostragem: o sampling do OpenTelemetry, um notebook do Kaggle e um vídeo sobre `df.sample(replace=True)`. A resposta curta é que **reamostrar não cria dados**. O relatório (seções 3.10, 4.5 e 4.6) ganhou o uso correto dessas ideias.
+
+### O que cada fonte é
+
+| Fonte | O que é | Serve para nós? |
+| --- | --- | --- |
+| OpenTelemetry, sampling | Escolher quais registros de monitoramento de servidores guardar, para economizar armazenamento | Não. Não trata de pessoas nem de inferência |
+| Vídeo, `df.sample(n=10000, replace=True)` | Gerar mais linhas repetindo as existentes | Não para aumentar n: seria pseudorreplicação |
+| Vídeo, `stratify=y` | Manter a proporção das classes ao dividir treino e teste | Não muda o n. Estratificar por persona exigiria nova coleta |
+| Notebook do Kaggle, capítulo 4 | Bootstrap: reamostrar a amostra do mesmo tamanho para medir a incerteza da média e montar um IC | Sim. É o que foi acrescentado |
+
+O próprio notebook alerta, no capítulo 1.2, que uma amostra de conveniência não permite generalizar. É o nosso caso, e o relatório diz isso.
+
+### Por que duplicar pessoas é errado
+
+Se as 31 pessoas virassem 1.000 linhas copiadas, o teste acharia que há 1.000 pessoas independentes. O erro padrão cairia cerca de 5,7 vezes (√(1000/31)), e quase tudo ficaria "significativo" sem nenhuma informação nova. Esse erro se chama **pseudorreplicação**, e um revisor reconhece na hora. Pelo mesmo motivo, os 20 sorteios por pessoa entram como média, e não como 620 observações.
+
+### O que o bootstrap mostrou
+
+- **Como funciona:** cada réplica sorteia 31 pessoas com reposição entre as 31 e recalcula a diferença média. São 10.000 réplicas. O IC 95% vai do quantil 2,5% ao 97,5%. O n continua 31: o bootstrap mede a incerteza sem supor distribuição normal.
+- **Resultado:** em 10 dos 12 testes, o IC do bootstrap e o IC do teste t concordam. Nenhuma decisão muda.
+- **A exceção é T7 e T8 (log loss contra a persona).** O IC t inclui o zero (−0,01 a 0,33), mas o bootstrap não (0,04 a 0,35). A causa é P06, cujo ganho é de 2,6, enquanto ninguém perde mais que 0,21. Esse valor extremo infla o desvio padrão. Sem P06, os dois intervalos ficam acima de zero, com efeito de +0,08. Leitura: o motor dá probabilidades um pouco melhores que a persona sozinha, de forma consistente, mas o efeito é pequeno e não sobrevive à correção de Holm.
+
+### Quantas pessoas seriam necessárias (80% de poder, supondo o efeito observado)
+
+| Comparação | d_z | Um teste pré-registrado (α = 0,05) | Família de 12 testes (α = 0,05/12) |
+| --- | --- | --- | --- |
+| Acurácia contra a regressão, 3 pares (T3) | 0,49 | 35 | 61 |
+| Acurácia contra a regressão, 5 pares (T4) | 0,54 | 30 | 52 |
+| Acurácia contra a regressão, 10 pares (T5) | 0,44 | 42 | 75 |
+| Log loss contra a persona, 3 pares (T7) | 0,34 | 71 | 125 |
+| Acurácia contra a persona, 3 pares (T1) | 0,22 | 159 | 279 (mais de 400 pela simulação do Wilcoxon) |
+| Log loss contra a regressão (T9 a T11) | 1,1 | 8 a 9 | 14 a 16 |
+
+Esses números são otimistas. O efeito medido em 31 pessoas é impreciso e tende a ser superestimado quando ficou perto da significância.
+
+### Como falar
+
+- **A frase principal:** "Reamostragem não aumenta a amostra, só mede a incerteza. Fiz o bootstrap por pessoa, e ele confirmou as mesmas conclusões. Para confirmar a vantagem em acerto sobre a regressão, eu precisaria de cerca de 60 pessoas."
+- **Se perguntarem do próximo passo:** "Pré-registrar um único teste principal. Sem a correção para 12 testes, bastariam cerca de 35 pessoas pelo efeito observado. Eu planejaria 60, com folga, porque o efeito observado tende a estar superestimado."
+- **Não diga** "o bootstrap aumentou a confiança" ou "o bootstrap mostrou que é significativo". **Diga** "o bootstrap mostrou que a conclusão não depende da suposição de normalidade".
+
+### Perguntas prováveis
+
+- **"Por que não usou bootstrap para ter mais dados?"** Porque o bootstrap não gera dados. Ele reamostra as mesmas 31 pessoas para ver quanto a média oscilaria. Copiar pessoas para inflar o n tornaria os valores-p artificialmente pequenos.
+- **"O bootstrap mudou alguma conclusão?"** Não. Ele só revelou que, na log loss contra a persona, o intervalo do teste t estava largo demais por causa de uma pessoa (P06). Mesmo assim, esse teste não passa na correção de Holm.
+- **"Qual o poder do seu estudo?"** Não reporto "poder observado", porque ele é só outra forma de escrever o valor-p. Reporto quantas pessoas um próximo estudo precisaria: cerca de 60 para a acurácia contra a regressão.
+- **"Por que 31 pessoas bastaram para a log loss, mas não para a acurácia?"** O efeito na log loss é grande (d_z ≈ 1,1): o motor ganha em 26 a 28 das 31 pessoas. Na acurácia, o efeito é médio (d_z ≈ 0,5), e cada pessoa só tem 10 pares de teste, então cada acerto vale 10 pontos e o ruído é grande.
