@@ -13,7 +13,7 @@ dev:      ## sobe só o banco e mostra como rodar API e front localmente
 seed:     ## recria catálogo, personas e estatísticas
 	$(API) seed --force
 demo:     ## sobe tudo, semeia se vazio e abre o modo demo
-	docker compose up -d --build
+	docker compose up -d
 	$(API) seed --if-empty --with-results
 	@(xdg-open http://localhost:8080/demo || open http://localhost:8080/demo) >/dev/null 2>&1 &
 check:    ## lint, tipos e testes do back-end e do front-end

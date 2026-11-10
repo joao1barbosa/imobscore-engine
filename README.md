@@ -26,7 +26,7 @@ cp .env.example .env   # o Compose lê o .env; sem ele, nenhum alvo sobe
 make demo              # sobe db, api e web, e abre o modo demo
 ```
 
-`make demo` abre <http://localhost:8080/demo>. Ele semeia o catálogo só se o banco estiver vazio, e carrega `data/results/results.csv` sem repetir um `run_id` que já exista. Não apaga nada: se o banco tiver dados da coleta, eles ficam.
+`make demo` abre <http://localhost:8080/demo>. Ele usa as imagens já construídas, sem reconstruí-las, e semeia o catálogo só se o banco estiver vazio. Carrega `data/results/results.csv` sem repetir um `run_id` que já exista. Não apaga nada: se o banco tiver dados da coleta, eles ficam. Depois de atualizar o código, rode `make up` uma vez com internet, antes da demo offline.
 
 Sem o modo demo, o caminho é:
 
@@ -42,7 +42,7 @@ Principais alvos (`make help` lista todos):
 | Alvo | O que faz |
 | --- | --- |
 | `make up` | Sobe db, api e web, com build |
-| `make demo` | `make up`, semeia se o banco estiver vazio, carrega os resultados e abre `/demo` |
+| `make demo` | Sobe db, api e web com as imagens já construídas, semeia se o banco estiver vazio, carrega os resultados e abre `/demo` |
 | `make seed` | Recria o catálogo e as personas, e apaga todas as sessões |
 | `make dev` | Sobe só o banco e mostra como rodar a API e o front-end localmente |
 | `make check` | Porta de qualidade: lint, formato, tipos e testes do back-end e do front-end |
@@ -81,7 +81,7 @@ make export   # grava data/collected/pairs.json
 - **Porta ocupada (5432 ou 8080).** `make up` ou `make demo` falha com "port is already allocated" ou "address already in use". Veja quem usa a porta com `ss -ltnp | grep -E ':(5432|8080)\b'`, e pare esse processo ou o outro projeto do Compose (com `make down` dentro dele). Para mudar a porta da interface, troque `8080:80` no `docker-compose.yml`.
 - **Banco vazio: a interface não mostra imóveis nem personas.** `make demo` semeia sozinho quando o banco está vazio. Para semear sem apagar nada, use `docker compose exec api python -m app.cli seed --if-empty`. `make seed` recria o catálogo, mas apaga todas as sessões, inclusive as da coleta.
 - **Painel do experimento vazio.** Rode `make demo` de novo: ele carrega `data/results/results.csv` no banco, sem repetir uma rodada que já esteja lá.
-- **Imagens ou pacotes sem internet.** `make up` e `make demo` precisam das imagens base e das dependências do Python e do Node no cache do Docker. Com internet, rode `docker compose pull` e `make up` uma vez: depois disso, `make demo` funciona offline.
+- **Imagens ou pacotes sem internet.** `make up` e `make demo` precisam das imagens base e das dependências do Python e do Node no cache do Docker. Com internet, rode `docker compose pull` e `make up` uma vez: depois disso, `make demo` funciona offline. `make demo` não reconstrói as imagens e usa as já construídas; depois de atualizar o código, rode `make up` uma vez com internet antes da demo offline.
 - **`make check` falha antes dos testes do front-end.** Falta instalar as dependências: rode `cd frontend && pnpm install` e tente de novo.
 - **A API não responde.** Veja os logs com `docker compose logs api`. A API só responde depois que o banco está saudável e as migrações rodaram.
 
