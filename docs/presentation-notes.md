@@ -50,3 +50,39 @@ Decisões de 04/11 a 09/11, registradas em `docs/decisions.md`.
 - **Código gerado pelo servidor:** quem troca de aparelho vira outro participante. Se completar duas vezes, conta como duas pessoas.
 - **Catálogo inteiro só em Goiânia e compra:** a coleta e a demo usam a mesma população de imóveis, então o que a demo mostra é o que os dados sustentam. O custo é que os resultados não valem para aluguel nem para outras cidades.
 - **Nenhum dado pessoal:** o projeto não guarda nome, e-mail, telefone nem IP. A coleta rodou na Vercel e no Render, que ainda veem o IP em trânsito, como qualquer servidor web.
+
+## Resultados do experimento depois da revisão estatística
+
+Em 09/11, um pesquisador revisou a primeira versão do relatório. O relatório técnico completo, em `docs/relatorio-experimento.pdf`, incorpora as correções. Na banca, use os números e as frases desta seção. As anteriores, como "H2 confirmada", estavam erradas.
+
+### O que mudou
+
+| Antes | Agora | Motivo |
+| --- | --- | --- |
+| "H1" e "H2" | "Hipóteses de pesquisa HP1 e HP2", cada uma com H₀ e H₁ | Na estatística, H0 e H1 são a nula e a alternativa; usar H1 e H2 para hipóteses de pesquisa confunde |
+| Erro padrão, sem valor-p | Wilcoxon pareado (primário), t pareado (conferência), IC 95% pelo t, tamanho de efeito d_z e correção de Holm em 12 testes | O revisor pediu o método do intervalo e os valores-p |
+| "H2 confirmada" | Confirmada só para log loss contra a regressão logística | Em acurácia, a vantagem não sobrevive à correção de Holm |
+| "H1 confirmada na direção" | H1 não confirmada | Nenhum teste contra a persona fica significativo após a correção |
+| "A vantagem diminui com mais pares, como previsto" | Não confirmado | Em acurácia, a queda tem p = 0,07; em log loss, a vantagem aumenta |
+| "31 colegas do mesmo curso" | "31 pessoas, da turma e do meu Instagram" | A composição da amostra é desconhecida, porque nenhum dado pessoal foi coletado |
+
+### Os números que valem
+
+- **Log loss contra a regressão logística:** o motor é melhor com 3, 5 e 10 pares (Holm p < 0,001; d_z de 1,1 a 1,2; melhor em 26 a 28 das 31 pessoas). É o resultado mais forte.
+- **Acurácia contra a regressão logística:** +4,2, +3,5 e +2,0 pontos. Sem correção, p de 0,007 a 0,02. Com Holm, p de 0,065, 0,065 e 0,117. Não é significativo.
+- **Contra a persona:** cerca de +3 pontos de acurácia, sem significância. A mediana das diferenças é de +0,5 ponto: o ganho está concentrado em poucas pessoas com persona muito errada, como P06.
+- **Convergência:** 1.860 de 1.860 ajustes do MCMC passaram nos critérios (R-hat < 1,05, ESS > 400, aceitação de 15% a 50%).
+
+### Como falar
+
+- **A frase principal:** "Com 3 a 10 escolhas, o motor bayesiano dá probabilidades muito mais confiáveis que a regressão logística. Em acerto, a vantagem é pequena e não passa na correção para vários testes."
+- **Por que a calibração importa:** o produto mostra uma probabilidade ao usuário ("87% de chance de você preferir este"). Se ela estiver errada com confiança, o usuário é enganado. A regressão logística erra com confiança, e o motor não.
+- **Não diga** "o motor acerta mais que os outros" sem a ressalva da significância. **Diga** "o motor ficou à frente em todos os tamanhos, mas a diferença de acerto não é estatisticamente significativa nesta amostra".
+
+### Perguntas prováveis sobre a estatística
+
+- **"Por que Wilcoxon e não teste t?"** Nas comparações com a persona, as diferenças não seguem distribuição normal (Shapiro-Wilk p < 0,001). O Wilcoxon não exige normalidade. O teste t está no relatório como conferência e dá conclusões parecidas.
+- **"Qual é a unidade de análise?"** A pessoa. Os 20 sorteios de uma pessoa reutilizam os mesmos 20 pares e não são independentes, então tiro a média deles antes de testar. São 31 observações por teste.
+- **"Por que Holm?"** São 12 testes. Sem correção, a chance de ao menos um falso positivo passa de 40%. O Holm controla esse erro e é menos conservador que o Bonferroni.
+- **"A análise foi pré-registrada?"** As hipóteses, os métodos, as métricas, o protocolo de sorteios e a regra de exclusão foram fixados antes. Os testes estatísticos foram escolhidos depois de ver os resultados descritivos, a pedido de um revisor. O relatório diz isso, e a correção sobre a família inteira de testes compensa parte do risco.
+- **"Não ser significativo quer dizer que não há diferença?"** Não. Com 31 pessoas e 10 pares de teste cada, diferenças de 2 a 3 pontos ficam no limite do que dá para detectar. O resultado é inconclusivo para acurácia, não uma prova de igualdade.
